@@ -1,4 +1,4 @@
-# CareerBridge  
+# TalentLink  
 *A cloud-native web application built with Flutter, Kubernetes, and Keycloak that connects students and professionals with employers.*
 
 ---
