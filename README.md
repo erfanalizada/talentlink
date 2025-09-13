@@ -4,7 +4,7 @@
 ---
 
 ## 📌 Project Overview  
-CareerBridge is a hiring platform where:  
+TalentLink is a hiring platform where:  
 - **Employees (students & professionals)** can create an account, build a profile, upload their CV, and set their job availability.  
 - **Employers (companies)** can register with a verified company email, post job advertisements (Internships, Graduation Internships, and Jobs), and use a **matching engine** to find the best candidates.  
 
