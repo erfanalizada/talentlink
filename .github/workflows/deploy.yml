@@ -1,10 +1,10 @@
 name: Deploy to Kubernetes
 
 on:
-  workflow_dispatch:   # manual trigger
+  workflow_dispatch:     # allow manual deploy
   push:
     branches:
-      - main           # auto deploy on main branch
+      - main             # auto-deploy on push to main
 
 jobs:
   deploy:
@@ -17,19 +17,25 @@ jobs:
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
         with:
-          version: 'v1.33.1' # match your cluster version
+          version: 'v1.33.1'   # match your cluster version
 
       - name: Configure kubeconfig
         run: |
-          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > $HOME/.kube/config
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 --decode -i > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
+          echo "Kubeconfig configured:"
+          kubectl config get-contexts
 
       - name: Deploy manifests
         run: |
+          echo "Applying Kubernetes manifests..."
           kubectl apply -f k8s/
 
-      - name: Verify rollout - frontend
-        run: kubectl rollout status deployment/frontend --timeout=120s
+      - name: Verify frontend rollout
+        run: |
+          kubectl rollout status deployment/frontend --timeout=120s
 
-      - name: Verify rollout - backend
-        run: kubectl rollout status deployment/backend --timeout=120s
+      - name: Verify backend rollout
+        run: |
+          kubectl rollout status deployment/backend --timeout=120s
