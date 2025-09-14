@@ -5,7 +5,7 @@ metadata:
   labels:
     app: frontend
 spec:
-  replicas: 1
+  replicas: 2   # run 2 pods for availability (can set back to 1 if you want)
   selector:
     matchLabels:
       app: frontend
@@ -24,13 +24,13 @@ spec:
             - containerPort: 80
           readinessProbe:
             httpGet:
-              path: /
+              path: /index.html
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /
+              path: /index.html
               port: 80
             initialDelaySeconds: 10
             periodSeconds: 20
