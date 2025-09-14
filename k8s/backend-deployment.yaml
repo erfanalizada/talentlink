@@ -14,9 +14,11 @@ spec:
     spec:
       containers:
       - name: backend
-        image: ghcr.io/erfanalizada/backend:latest
+        image: ghcr.io/erfanalizada/talentlink-backend:latest
         ports:
         - containerPort: 5000
+      imagePullSecrets:
+      - name: ghcr-secret
 ---
 apiVersion: v1
 kind: Service
