@@ -50,3 +50,13 @@ jobs:
 #If both builds succeed → CI passes (green checkmark).
 
 #If one fails → CI fails (red).
+
+# What this does:
+
+#Logs in to GHCR using your secrets (GHCR_USERNAME and GHCR_TOKEN).
+
+#Builds your backend and frontend images.
+
+#Pushes them to ghcr.io/erfanalizada/backend:latest and ghcr.io/erfanalizada/frontend:latest.
+
+# After pushing, you can confirm in GitHub under Packages of your repo.
