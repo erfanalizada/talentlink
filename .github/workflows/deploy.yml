@@ -1,40 +1,58 @@
-name: Deploy to Kubernetes
+name: CI/CD Deploy
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:   # manual trigger
   push:
     branches:
-      - main
+      - main           # auto deploy on main branch
 
 jobs:
-  deploy:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+
+      - name: Build & push backend
+        run: |
+          docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-backend:latest ./backend
+          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-backend:latest
+
+      - name: Build & push frontend
+        run: |
+          docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-frontend:latest ./frontend
+          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-frontend:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Install OCI CLI
         run: |
-          curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh | bash -s -- --accept-all-defaults --install-dir /usr/local/bin
-          echo "/usr/local/bin/oci/bin" >> $GITHUB_PATH
+          curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh | bash -s -- --accept-all-defaults
+          echo "$HOME/bin" >> $GITHUB_PATH
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
         with:
-          version: 'v1.33.1'
+          version: 'v1.33.1'   # must match your cluster
 
       - name: Decode Kubeconfig
         run: |
-          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 --decode > kubeconfig
           mkdir -p $HOME/.kube
-          mv kubeconfig $HOME/.kube/config
-
-      - name: Test cluster access
-        run: kubectl get nodes
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
 
       - name: Deploy manifests
         run: |
           kubectl apply -f k8s/
-          kubectl rollout status deployment/frontend
           kubectl rollout status deployment/backend
+          kubectl rollout status deployment/frontend
