@@ -1,10 +1,10 @@
 name: Deploy to Kubernetes
 
 on:
-  workflow_dispatch:     # allow manual deploy
+  workflow_dispatch:
   push:
     branches:
-      - main             # auto-deploy on push to main
+      - main
 
 jobs:
   deploy:
@@ -14,28 +14,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Install OCI CLI
+        run: |
+          curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh | bash -s -- --accept-all-defaults --install-dir /usr/local/bin
+          echo "/usr/local/bin/oci/bin" >> $GITHUB_PATH
+
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
         with:
-          version: 'v1.33.1'   # match your cluster version
+          version: 'v1.33.1'
 
-      - name: Configure kubeconfig
+      - name: Decode Kubeconfig
         run: |
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 --decode > kubeconfig
           mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 --decode -i > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
-          echo "Kubeconfig configured:"
-          kubectl config get-contexts
+          mv kubeconfig $HOME/.kube/config
+
+      - name: Test cluster access
+        run: kubectl get nodes
 
       - name: Deploy manifests
         run: |
-          echo "Applying Kubernetes manifests..."
           kubectl apply -f k8s/
-
-      - name: Verify frontend rollout
-        run: |
-          kubectl rollout status deployment/frontend --timeout=120s
-
-      - name: Verify backend rollout
-        run: |
-          kubectl rollout status deployment/backend --timeout=120s
+          kubectl rollout status deployment/frontend
+          kubectl rollout status deployment/backend
