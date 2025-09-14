@@ -17,17 +17,16 @@ spec:
         image: ghcr.io/erfanalizada/backend:latest
         ports:
         - containerPort: 5000
-      imagePullSecrets:
-      - name: ghcr-secret
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: backend-service
 spec:
-  type: ClusterIP   # internal only
   selector:
     app: backend
   ports:
-  - port: 5000
+  - protocol: TCP
+    port: 5000
     targetPort: 5000
+  type: ClusterIP
