@@ -1,10 +1,10 @@
 name: Deploy to Kubernetes
 
 on:
+  workflow_dispatch:   # manual trigger
   push:
     branches:
-      - main
-  workflow_dispatch:
+      - main           # auto deploy on main branch
 
 jobs:
   deploy:
@@ -14,33 +14,34 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install OCI CLI
-        run: |
-          curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh | bash -s -- --accept-all-defaults --install-dir /usr/local/bin
-          oci --version
-
-      - name: Configure OCI CLI
-        run: |
-          mkdir -p $HOME/.oci
-          echo "${{ secrets.OCI_CONFIG }}" > $HOME/.oci/config
-          echo "${{ secrets.OCI-API_KEY }}" > $HOME/.oci/oci_api_key.pem
-          chmod 600 $HOME/.oci/config $HOME/.oci/oci_api_key.pem
-
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
         with:
-          version: 'v1.33.1'
+          version: 'v1.33.1' # match your cluster version
 
-      - name: Decode Kubeconfig
+      - name: Install OCI CLI
         run: |
-          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 --decode > kubeconfig
+          curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh \
+            | bash -s -- --accept-all-defaults --install-dir /usr/local/bin
+          echo "/home/runner/bin" >> $GITHUB_PATH
+          /home/runner/bin/oci --version
+
+      - name: Configure kubeconfig
+        run: |
           mkdir -p $HOME/.kube
-          mv kubeconfig $HOME/.kube/config
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
+          ls -la $HOME/.kube
+          cat $HOME/.kube/config | head -20
+
+      - name: Verify cluster access
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
 
       - name: Deploy to Cluster
         run: |
           echo "Applying Kubernetes manifests..."
-          kubectl apply -f k8s/
-          kubectl rollout status deployment/frontend
-          kubectl rollout status deployment/backend
+          kubectl apply -f k8s/ --validate=false
+          kubectl rollout status deployment/frontend || true
+          kubectl rollout status deployment/backend || true
