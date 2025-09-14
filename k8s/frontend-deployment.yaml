@@ -16,10 +16,7 @@ spec:
       - name: frontend
         image: ghcr.io/erfanalizada/frontend:latest
         ports:
-        - containerPort: 3000
-        env:
-        - name: BACKEND_URL
-          value: "http://backend-service:5000"
+        - containerPort: 80
       imagePullSecrets:
       - name: ghcr-secret
 ---
@@ -28,9 +25,10 @@ kind: Service
 metadata:
   name: frontend-service
 spec:
-  type: LoadBalancer   # public
+  type: LoadBalancer
   selector:
     app: frontend
   ports:
-  - port: 80
-    targetPort: 3000
+  - protocol: TCP
+    port: 80
+    targetPort: 80
