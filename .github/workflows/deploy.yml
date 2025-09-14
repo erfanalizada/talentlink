@@ -19,14 +19,17 @@ jobs:
         with:
           version: 'v1.33.1' # match your cluster version
 
-      - name: Decode Kubeconfig
+      - name: Configure kubeconfig
         run: |
-          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 --decode > kubeconfig
-          mkdir -p $HOME/.kube
-          mv kubeconfig $HOME/.kube/config
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
 
-      - name: Deploy to Cluster
+      - name: Deploy manifests
         run: |
           kubectl apply -f k8s/
-          kubectl rollout status deployment/frontend
-          kubectl rollout status deployment/backend
+
+      - name: Verify rollout - frontend
+        run: kubectl rollout status deployment/frontend --timeout=120s
+
+      - name: Verify rollout - backend
+        run: kubectl rollout status deployment/backend --timeout=120s
