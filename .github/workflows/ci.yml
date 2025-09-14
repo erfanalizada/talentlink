@@ -14,15 +14,28 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
+    # Log in to GHCR
+    - name: Log in to GitHub Container Registry
+      run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+
     # Build Backend Docker Image
     - name: Build backend Docker image
       run: |
-        docker build -t backend ./backend
+        docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/backend:latest ./backend
 
     # Build Frontend Docker Image
     - name: Build frontend Docker image
       run: |
-        docker build -t frontend ./frontend
+        docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/frontend:latest ./frontend
+
+    # Push Backend Image
+    - name: Push backend Docker image
+      run: docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/backend:latest
+
+    # Push Frontend Image
+    - name: Push frontend Docker image
+      run: docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/frontend:latest
+
 
 #What this does
 
