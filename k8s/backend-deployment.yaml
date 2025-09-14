@@ -16,6 +16,7 @@ spec:
       containers:
         - name: backend
           image: ghcr.io/erfanalizada/talentlink-backend:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
           readinessProbe:
