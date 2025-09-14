@@ -1,34 +1,47 @@
-name: CI
+name: CI/CD
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      # Log in to GitHub Container Registry
-      - name: Log in to GitHub Container Registry
-        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
 
-      # Build & push backend image
-      - name: Build and push backend image
+      - name: Build & push backend
         run: |
-          docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/backend:latest ./backend
-          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/backend:latest
+          docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-backend:latest ./backend
+          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-backend:latest
 
-      # Build & push frontend image
-      - name: Build and push frontend image
+      - name: Build & push frontend
         run: |
-          docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/frontend:latest ./frontend
-          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/frontend:latest
+          docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-frontend:latest ./frontend
+          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-frontend:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig
+        run: |
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Deploy manifests
+        run: kubectl apply -f k8s/
+
 
 
 
