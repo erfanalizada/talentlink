@@ -14,30 +14,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Ensure OCI CLI Installed
-        run: |
-          if ! command -v oci &> /dev/null
-          then
-            echo "OCI CLI not found, installing..."
-            curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh \
-              | bash -s -- --accept-all-defaults --exec-dir /usr/local/bin
-          else
-            echo "OCI CLI already installed."
-          fi
-          oci --version
-
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
         with:
-          version: 'v1.33.1'
+          version: 'v1.33.1' # match your cluster version
 
-      - name: Decode Kubeconfig
+      - name: Configure kubeconfig
         run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
-      - name: Deploy to Cluster
+      - name: Deploy manifests
         run: |
           echo "Applying Kubernetes manifests..."
           kubectl apply -f k8s/ --validate=false
