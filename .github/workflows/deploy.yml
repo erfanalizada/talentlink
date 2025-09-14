@@ -1,0 +1,32 @@
+name: Deploy to Kubernetes
+
+on:
+  workflow_dispatch:   # manual trigger
+  push:
+    branches:
+      - main           # auto deploy on main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.33.1' # match your cluster version
+
+      - name: Decode Kubeconfig
+        run: |
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 --decode > kubeconfig
+          mkdir -p $HOME/.kube
+          mv kubeconfig $HOME/.kube/config
+
+      - name: Deploy to Cluster
+        run: |
+          kubectl apply -f k8s/
+          kubectl rollout status deployment/frontend
+          kubectl rollout status deployment/backend
