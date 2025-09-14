@@ -15,7 +15,7 @@ spec:
         - name: ghcr-secret
       containers:
         - name: backend
-          image: ghcr.io/YOUR_GITHUB_USERNAME/talentlink-backend:latest
+          image: ghcr.io/erfanalizada/talentlink-backend:latest
           ports:
             - containerPort: 5000
           readinessProbe:
