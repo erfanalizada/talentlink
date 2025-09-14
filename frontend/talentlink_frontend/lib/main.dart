@@ -12,41 +12,45 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'TalentLink Demo',
+      title: 'Talentlink',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const HomePage(),
+      home: const MyHomePage(title: 'Talentlink Frontend'),
     );
   }
 }
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key, required this.title});
+
+  final String title;
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  String _message = "Click the button to call backend";
+class _MyHomePageState extends State<MyHomePage> {
+  String _response = "Click the button to call backend";
 
   Future<void> _callBackend() async {
     try {
-      final response = await http.get(Uri.parse("/api/hello"));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+      final uri = Uri.parse('/api/hello'); // nginx will proxy this
+      final res = await http.get(uri);
+
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
         setState(() {
-          _message = data["message"];
+          _response = body['message'] ?? "No message field";
         });
       } else {
         setState(() {
-          _message = "Error: ${response.statusCode}";
+          _response = "Error: ${res.statusCode}";
         });
       }
     } catch (e) {
       setState(() {
-        _message = "Exception: $e";
+        _response = "Failed: $e";
       });
     }
   }
@@ -54,12 +58,14 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("TalentLink")),
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(_message, style: const TextStyle(fontSize: 18)),
+          children: <Widget>[
+            Text(_response),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _callBackend,
