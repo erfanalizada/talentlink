@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # Build Backend Docker Image
+    - name: Build backend Docker image
+      run: |
+        docker build -t backend ./backend
+
+    # Build Frontend Docker Image
+    - name: Build frontend Docker image
+      run: |
+        docker build -t frontend ./frontend
+
+#What this does
+
+#Every time you push to main or make a pull request → GitHub will:
+
+#Checkout your code.
+
+#Try to build backend/Dockerfile.
+
+#Try to build frontend/Dockerfile.
+
+#If both builds succeed → CI passes (green checkmark).
+
+#If one fails → CI fails (red).
