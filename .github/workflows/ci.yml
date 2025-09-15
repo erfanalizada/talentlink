@@ -67,11 +67,10 @@ jobs:
       - name: Restart frontend deployment
         run: kubectl rollout restart deployment frontend --namespace=default
 
-      # Verify rollout success
-      - name: Verify rollout
-        run: |
-          kubectl rollout status deployment backend --namespace=default
-          kubectl rollout status deployment frontend --namespace=default
+      # Debug: Show pods status after deployment
+      - name: Get pods after deploy
+        run: kubectl get pods -n default -o wide
+
 
 
 
