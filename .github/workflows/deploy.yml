@@ -10,6 +10,11 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
+      - name: Install OCI CLI
+        run: |
+          curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh | bash -s -- -b /usr/local/bin
+          oci --version
+
       - name: Set up kubeconfig
         run: |
           mkdir -p $HOME/.kube
@@ -19,4 +24,4 @@ jobs:
         run: |
           kubectl cluster-info
           kubectl get nodes
-          kubectl get pods -A
+
