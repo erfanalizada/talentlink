@@ -11,17 +11,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Install Flutter
+      # Install Flutter SDK
       - name: Install Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'   # <-- adjust to your Flutter version
+          flutter-version: '3.24.0'   # adjust to your Flutter version
           channel: 'stable'
 
-      # Build Flutter web
+      # Build Flutter web (from correct folder)
       - name: Build Flutter web
+        working-directory: frontend/talentlink_frontend
         run: |
-          cd frontend
           flutter pub get
           flutter build web --release
 
@@ -29,13 +29,13 @@ jobs:
       - name: Log in to GHCR
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
 
-      # Build & push backend
+      # Build & push backend image
       - name: Build & push backend
         run: |
           docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-backend:latest ./backend
           docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-backend:latest
 
-      # Build & push frontend (includes fresh web build)
+      # Build & push frontend image (Dockerfile should copy ./talentlink_frontend/build/web)
       - name: Build & push frontend
         run: |
           docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-frontend:latest ./frontend
@@ -70,20 +70,21 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
-      # Apply manifests
+      # Apply Kubernetes manifests
       - name: Deploy manifests
         run: kubectl apply -f k8s/
 
-      # Force restart deployments so new images are pulled
+      # Restart deployments so new images are picked up
       - name: Restart backend deployment
         run: kubectl rollout restart deployment backend --namespace=default
 
       - name: Restart frontend deployment
         run: kubectl rollout restart deployment frontend --namespace=default
 
-      # Debug: Show pods status after deployment
+      # Debugging: show pods after deploy
       - name: Get pods after deploy
         run: kubectl get pods -n default -o wide
+
 
 
 
