@@ -30,6 +30,7 @@ jobs:
 
       - name: Test cluster access
         run: |
+          oci iam region list
           kubectl cluster-info
           kubectl get nodes
           kubectl get pods -A
