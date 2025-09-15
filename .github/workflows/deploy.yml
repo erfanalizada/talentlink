@@ -1,47 +1,22 @@
-name: Deploy to Kubernetes
+name: Test OKE Connection
 
 on:
-  workflow_dispatch:   # manual trigger
-  push:
-    branches:
-      - main           # auto deploy on main branch
+  workflow_dispatch: # run manually from Actions tab
 
 jobs:
-  deploy:
+  test-k8s:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'v1.33.1' # match your cluster version
-
-      - name: Install OCI CLI
-        run: |
-          curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh \
-            | bash -s -- --accept-all-defaults --install-dir /usr/local/bin
-          echo "/home/runner/bin" >> $GITHUB_PATH
-          /home/runner/bin/oci --version
-
-      - name: Configure kubeconfig
+      - name: Set up kubeconfig
         run: |
           mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
-          ls -la $HOME/.kube
-          cat $HOME/.kube/config | head -20
+          echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
 
-      - name: Verify cluster access
+      - name: Test cluster access
         run: |
           kubectl cluster-info
           kubectl get nodes
-
-      - name: Deploy to Cluster
-        run: |
-          echo "Applying Kubernetes manifests..."
-          kubectl apply -f k8s/ --validate=false
-          kubectl rollout status deployment/frontend || true
-          kubectl rollout status deployment/backend || true
+          kubectl get pods -A
