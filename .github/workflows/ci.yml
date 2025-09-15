@@ -34,7 +34,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Install OCI CLI so kubeconfig exec works
+      # Install OCI CLI so kubeconfig exec workss
       - name: Install OCI CLI
         run: |
           pip install --upgrade pip
