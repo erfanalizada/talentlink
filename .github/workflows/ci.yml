@@ -11,11 +11,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Install Flutter SDK
+      # Install Flutter SDK (with Dart >= 3.9.x support)
       - name: Install Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'   # adjust to your Flutter version
+          flutter-version: '3.35.3'
           channel: 'stable'
 
       # Build Flutter web (from correct folder)
@@ -35,7 +35,8 @@ jobs:
           docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-backend:latest ./backend
           docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-backend:latest
 
-      # Build & push frontend image (Dockerfile should copy ./talentlink_frontend/build/web)
+      # Build & push frontend image
+      # Make sure your Dockerfile copies talentlink_frontend/build/web into nginx/html
       - name: Build & push frontend
         run: |
           docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-frontend:latest ./frontend
@@ -84,6 +85,7 @@ jobs:
       # Debugging: show pods after deploy
       - name: Get pods after deploy
         run: kubectl get pods -n default -o wide
+
 
 
 
