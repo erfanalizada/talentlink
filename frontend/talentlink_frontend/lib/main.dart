@@ -65,10 +65,33 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text(_response),
+            // 👇 New welcome message
+            const Text(
+              "🎉 Welcome to Talentlink 🎉",
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepOrange, // eye-catching
+              ),
+            ),
+            const SizedBox(height: 30),
+
+            Text(
+              _response,
+              style: const TextStyle(fontSize: 18),
+            ),
             const SizedBox(height: 20),
+
             ElevatedButton(
               onPressed: _callBackend,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24, vertical: 14),
+                textStyle:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               child: const Text("Call Backend"),
             ),
           ],
