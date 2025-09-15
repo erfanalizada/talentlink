@@ -32,6 +32,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   String _response = "Click the button to call backend";
+  int _counter = 0;
 
   Future<void> _callBackend() async {
     try {
@@ -55,47 +56,100 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  void _incrementCounter() {
+    setState(() {
+      _counter++;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            // 👇 New welcome message
-            const Text(
-              "🎉 Welcome to Talentlink 🎉",
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Welcome banner
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.deepOrange, Colors.orangeAccent],
+              ),
+            ),
+            child: const Text(
+              "🎉 Welcome to Talentlink v2 🎉",
+              textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: Colors.deepOrange, // eye-catching
+                color: Colors.white,
               ),
             ),
-            const SizedBox(height: 30),
+          ),
 
-            Text(
-              _response,
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 20),
+          // Main content
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Text(
+                    _response,
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                  const SizedBox(height: 20),
 
-            ElevatedButton(
-              onPressed: _callBackend,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 14),
-                textStyle:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ElevatedButton(
+                    onPressed: _callBackend,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 14),
+                      textStyle: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    child: const Text("Call Backend"),
+                  ),
+                  const SizedBox(height: 30),
+
+                  // Counter feature
+                  Text(
+                    "Counter: $_counter",
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: _incrementCounter,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text("Increment Counter"),
+                  ),
+                ],
               ),
-              child: const Text("Call Backend"),
             ),
-          ],
-        ),
+          ),
+
+          // Footer
+          const Padding(
+            padding: EdgeInsets.all(12),
+            child: Text(
+              "🚀 Powered by Talentlink CI/CD v2",
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
