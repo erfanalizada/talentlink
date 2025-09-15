@@ -17,17 +17,13 @@ jobs:
 
       - name: Build & push backend
         run: |
-          docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-backend:latest \
-                       -t ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-backend:${{ github.sha }} ./backend
+          docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-backend:latest ./backend
           docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-backend:latest
-          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-backend:${{ github.sha }}
 
       - name: Build & push frontend
         run: |
-          docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-frontend:latest \
-                       -t ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-frontend:${{ github.sha }} ./frontend
+          docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-frontend:latest ./frontend
           docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-frontend:latest
-          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-frontend:${{ github.sha }}
 
   deploy:
     needs: build-and-push
@@ -72,3 +68,7 @@ jobs:
       # Debug: Show pods status after deployment
       - name: Get pods after deploy
         run: kubectl get pods -n default -o wide
+
+      # NEW: Print frontend service external IP (URL for your app)
+      - name: Get frontend service external IP
+        run: kubectl get svc frontend-service -n default -o wide
