@@ -13,6 +13,8 @@ jobs:
 
       - name: Log in to GHCR
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+        # Or simpler:
+        # run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Build & push backend
         run: |
@@ -31,16 +33,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v4
+      - name: Install OCI CLI
+        run: |
+          pip install --upgrade pip
+          pip install oci-cli
+          oci --version
+
+      - name: Configure OCI CLI
+        run: |
+          mkdir -p $HOME/.oci
+          echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
+          echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
+          chmod 600 $HOME/.oci/oci_api_key.pem
 
       - name: Configure kubeconfig
         run: |
-          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > $HOME/.kube/config
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
       - name: Deploy manifests
         run: kubectl apply -f k8s/
+
 
 
 
