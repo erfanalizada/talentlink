@@ -11,32 +11,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Install Flutter SDK (with Dart >= 3.9.x support)
-      - name: Install Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.35.3'
-          channel: 'stable'
-
-      # Build Flutter web (from correct folder)
-      - name: Build Flutter web
-        working-directory: frontend/talentlink_frontend
-        run: |
-          flutter pub get
-          flutter build web --release
-
-      # Log in to GHCR
+      # Log in to GHCR (make sure GHCR_USERNAME + GHCR_TOKEN are in repo secrets)
       - name: Log in to GHCR
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+        # Or simpler with GitHub’s built-in token:
+        # run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      # Build & push backend image
       - name: Build & push backend
         run: |
           docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-backend:latest ./backend
           docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-backend:latest
 
-      # Build & push frontend image
-      # Make sure your Dockerfile copies talentlink_frontend/build/web into nginx/html
       - name: Build & push frontend
         run: |
           docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-frontend:latest ./frontend
@@ -49,7 +34,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Install OCI CLI
+      # Install OCI CLI so kubeconfig exec works
       - name: Install OCI CLI
         run: |
           pip install --upgrade pip
@@ -64,30 +49,27 @@ jobs:
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
           chmod 600 $HOME/.oci/oci_api_key.pem
 
-      # Configure kubeconfig
+      # Configure kubeconfig for kubectl
       - name: Configure kubeconfig
         run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
-      # Apply Kubernetes manifests
+      # Apply manifests
       - name: Deploy manifests
         run: kubectl apply -f k8s/
 
-      # Restart deployments so new images are picked up
+      # Force restart deployments so new images are pulled
       - name: Restart backend deployment
         run: kubectl rollout restart deployment backend --namespace=default
 
       - name: Restart frontend deployment
         run: kubectl rollout restart deployment frontend --namespace=default
 
-      # Debugging: show pods after deploy
+      # Debug: Show pods status after deployment
       - name: Get pods after deploy
         run: kubectl get pods -n default -o wide
-
-
-
 
 
 
