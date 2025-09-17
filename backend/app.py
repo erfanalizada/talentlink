@@ -2,11 +2,11 @@ from flask import Flask
 
 app = Flask(__name__)
 
-@app.route("/hello")
+@app.route("/api/hello")
 def hello():
     return {"message": "Hello from backend"}
 
-@app.route("/health")
+@app.route("/api/health")
 def health():
     return {"status": "ok"}
 
