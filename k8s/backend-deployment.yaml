@@ -1,48 +1,57 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: apps/v1                      # API version for Deployment
+kind: Deployment                         # Resource type is Deployment
 metadata:
-  name: backend
+  name: backend                          # Name of the Deployment
   labels:
-    app: backend
+    app: backend                         # Label to identify this app
 spec:
-  replicas: 2   # optional, set 1 if you only want a single instance
+  replicas: 2                            # Run 2 replicas (pods) for HA
   selector:
     matchLabels:
-      app: backend
+      app: backend                       # Deployment targets pods with this label
   template:
     metadata:
       labels:
-        app: backend
+        app: backend                     # Pod template gets the "app=backend" label
     spec:
       imagePullSecrets:
-        - name: ghcr-secret
+        - name: ghcr-secret              # Secret with GHCR credentials for pulling private image
       containers:
-        - name: backend
-          image: ghcr.io/erfanalizada/talentlink-backend:latest
-          imagePullPolicy: Always
+        - name: backend                  # Container name
+          image: ghcr.io/erfanalizada/talentlink-backend:latest   # Image to run
+          imagePullPolicy: Always        # Always pull the latest image
           ports:
-            - containerPort: 5000
-          readinessProbe:
+            - containerPort: 5000        # Container listens on port 5000
+          resources:                     # Resource requests and limits
+            requests:
+              cpu: "100m"                # Minimum CPU (0.1 core) reserved for this pod
+              memory: "128Mi"            # Minimum memory reserved (128 MB)
+            limits:
+              cpu: "500m"                # Max CPU the pod can use (0.5 core)
+              memory: "512Mi"            # Max memory the pod can use (512 MB)
+          readinessProbe:                # Probe to check if pod is ready to serve traffic
             httpGet:
-              path: /hello
-              port: 5000
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          livenessProbe:
+              path: /hello               # Hits /hello endpoint
+              port: 5000                 # On port 5000
+            initialDelaySeconds: 5       # Wait 5s before first check
+            periodSeconds: 10            # Run probe every 10s
+          livenessProbe:                 # Probe to check if pod is still alive
             httpGet:
-              path: /hello
-              port: 5000
-            initialDelaySeconds: 10
-            periodSeconds: 20
+              path: /hello               # Hits /hello endpoint
+              port: 5000                 # On port 5000
+            initialDelaySeconds: 10      # Wait 10s before first check
+            periodSeconds: 20            # Run probe every 20s
 ---
-apiVersion: v1
-kind: Service
+apiVersion: v1                           # API version for Service
+kind: Service                            # Resource type is Service
 metadata:
-  name: backend-service
+  name: backend-service                  # Service name
+  annotations:
+    nginx.ingress.kubernetes.io/limit-rps: "10"   # (Optional, used with Ingress) Limit to 10 requests/sec per client IP
 spec:
-  type: ClusterIP
+  type: ClusterIP                        # Internal-only service (not exposed outside cluster)
   selector:
-    app: backend
+    app: backend                         # Selects pods with label "app=backend"
   ports:
-    - port: 5000
-      targetPort: 5000
+    - port: 5000                         # Service exposed on port 5000
+      targetPort: 5000                   # Maps to containerPort 5000 inside pod
