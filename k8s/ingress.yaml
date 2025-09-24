@@ -23,7 +23,7 @@ spec:
             name: frontend-service
             port:
               number: 80
-      - path: /api           # ✅ No rewrite → /api/* goes to backend as-is
+      - path: /api           
         pathType: Prefix
         backend:
           service:
