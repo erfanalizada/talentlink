@@ -1,43 +1,36 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend
+  name: user-service
   labels:
-    app: backend
+    app: user-service
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: backend
+      app: user-service
   template:
     metadata:
       labels:
-        app: backend
+        app: user-service
     spec:
       imagePullSecrets:
         - name: ghcr-secret
       containers:
-        - name: backend
-          image: ghcr.io/erfanalizada/talentlink-backend:latest
+        - name: user-service
+          image: ghcr.io/erfanalizada/user-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
-            limits:
-              cpu: "500m"
-              memory: "512Mi"
-          readinessProbe:          # ✅ Fixed to /api/health
+          readinessProbe:
             httpGet:
-              path: /api/health
+              path: /api/users/health
               port: 5000
             initialDelaySeconds: 5
             periodSeconds: 10
-          livenessProbe:           # ✅ Fixed to /api/health
+          livenessProbe:
             httpGet:
-              path: /api/health
+              path: /api/users/health
               port: 5000
             initialDelaySeconds: 10
             periodSeconds: 20
@@ -45,13 +38,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: backend-service
-  annotations:
-    nginx.ingress.kubernetes.io/limit-rps: "10"
+  name: user-service
 spec:
   type: ClusterIP
   selector:
-    app: backend
+    app: user-service
   ports:
     - port: 5000
       targetPort: 5000
