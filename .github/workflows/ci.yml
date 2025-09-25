@@ -3,15 +3,7 @@ name: CI/CD
 on:
   push:
     branches: [ main ]
-    paths:
-      - "backend/auth-service/**"
-      - "backend/user-service/**"
-      - "backend/job-service/**"
-      - "backend/cv-service/**"
-      - "backend/matching-service/**"
-      - "backend/notification-service/**"
-      - "frontend/**"
-      - "k8s/**"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -21,7 +13,6 @@ jobs:
   # ---------------- AUTH SERVICE ----------------
   build-and-deploy-auth:
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.message, '[skip-ci]') == false && (github.event.head_commit.message != '')
     steps:
       - uses: actions/checkout@v4
 
@@ -53,6 +44,7 @@ jobs:
         run: |
           kubectl set image deployment/auth-service auth-service=ghcr.io/erfanalizada/auth-service:${{ github.sha }}
           kubectl rollout status deployment/auth-service
+          kubectl get pods -o wide
 
   # ---------------- USER SERVICE ----------------
   build-and-deploy-user:
@@ -76,6 +68,7 @@ jobs:
       - run: |
           kubectl set image deployment/user-service user-service=ghcr.io/erfanalizada/user-service:${{ github.sha }}
           kubectl rollout status deployment/user-service
+          kubectl get pods -o wide
 
   # ---------------- JOB SERVICE ----------------
   build-and-deploy-job:
@@ -99,6 +92,7 @@ jobs:
       - run: |
           kubectl set image deployment/job-service job-service=ghcr.io/erfanalizada/job-service:${{ github.sha }}
           kubectl rollout status deployment/job-service
+          kubectl get pods -o wide
 
   # ---------------- CV SERVICE ----------------
   build-and-deploy-cv:
@@ -122,6 +116,7 @@ jobs:
       - run: |
           kubectl set image deployment/cv-service cv-service=ghcr.io/erfanalizada/cv-service:${{ github.sha }}
           kubectl rollout status deployment/cv-service
+          kubectl get pods -o wide
 
   # ---------------- MATCHING SERVICE ----------------
   build-and-deploy-matching:
@@ -145,6 +140,7 @@ jobs:
       - run: |
           kubectl set image deployment/matching-service matching-service=ghcr.io/erfanalizada/matching-service:${{ github.sha }}
           kubectl rollout status deployment/matching-service
+          kubectl get pods -o wide
 
   # ---------------- NOTIFICATION SERVICE ----------------
   build-and-deploy-notification:
@@ -168,6 +164,7 @@ jobs:
       - run: |
           kubectl set image deployment/notification-service notification-service=ghcr.io/erfanalizada/notification-service:${{ github.sha }}
           kubectl rollout status deployment/notification-service
+          kubectl get pods -o wide
 
   # ---------------- FRONTEND ----------------
   build-and-deploy-frontend:
@@ -191,3 +188,4 @@ jobs:
       - run: |
           kubectl set image deployment/frontend frontend=ghcr.io/erfanalizada/talentlink-frontend:${{ github.sha }}
           kubectl rollout status deployment/frontend
+          kubectl get pods -o wide
