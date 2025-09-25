@@ -17,12 +17,14 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Log in to GHCR
-        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u erfanalizada --password-stdin
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
 
       - name: Build & push auth-service
         run: |
-          docker build -t ghcr.io/erfanalizada/auth-service:${{ github.sha }} ./backend/auth-service
-          docker push ghcr.io/erfanalizada/auth-service:${{ github.sha }}
+          docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/auth-service:${{ github.sha }} ./backend/auth-service
+          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/auth-service:${{ github.sha }}
+          docker tag ghcr.io/${{ secrets.GHCR_USERNAME }}/auth-service:${{ github.sha }} ghcr.io/${{ secrets.GHCR_USERNAME }}/auth-service:latest
+          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/auth-service:latest
 
       - name: Install OCI CLI
         run: pip install --upgrade pip && pip install oci-cli
@@ -42,7 +44,7 @@ jobs:
 
       - name: Deploy auth-service
         run: |
-          kubectl set image deployment/auth-service auth-service=ghcr.io/erfanalizada/auth-service:${{ github.sha }}
+          kubectl set image deployment/auth-service auth-service=ghcr.io/${{ secrets.GHCR_USERNAME }}/auth-service:${{ github.sha }}
           kubectl rollout status deployment/auth-service
           kubectl get pods -o wide
 
@@ -51,10 +53,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u erfanalizada --password-stdin
-      - run: |
-          docker build -t ghcr.io/erfanalizada/user-service:${{ github.sha }} ./backend/user-service
-          docker push ghcr.io/erfanalizada/user-service:${{ github.sha }}
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+      - name: Build & push user-service
+        run: |
+          docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/user-service:${{ github.sha }} ./backend/user-service
+          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/user-service:${{ github.sha }}
+          docker tag ghcr.io/${{ secrets.GHCR_USERNAME }}/user-service:${{ github.sha }} ghcr.io/${{ secrets.GHCR_USERNAME }}/user-service:latest
+          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/user-service:latest
       - run: pip install --upgrade pip && pip install oci-cli
       - run: |
           mkdir -p $HOME/.oci
@@ -66,7 +72,7 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
       - run: |
-          kubectl set image deployment/user-service user-service=ghcr.io/erfanalizada/user-service:${{ github.sha }}
+          kubectl set image deployment/user-service user-service=ghcr.io/${{ secrets.GHCR_USERNAME }}/user-service:${{ github.sha }}
           kubectl rollout status deployment/user-service
           kubectl get pods -o wide
 
@@ -75,10 +81,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u erfanalizada --password-stdin
-      - run: |
-          docker build -t ghcr.io/erfanalizada/job-service:${{ github.sha }} ./backend/job-service
-          docker push ghcr.io/erfanalizada/job-service:${{ github.sha }}
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+      - name: Build & push job-service
+        run: |
+          docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/job-service:${{ github.sha }} ./backend/job-service
+          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/job-service:${{ github.sha }}
+          docker tag ghcr.io/${{ secrets.GHCR_USERNAME }}/job-service:${{ github.sha }} ghcr.io/${{ secrets.GHCR_USERNAME }}/job-service:latest
+          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/job-service:latest
       - run: pip install --upgrade pip && pip install oci-cli
       - run: |
           mkdir -p $HOME/.oci
@@ -90,7 +100,7 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
       - run: |
-          kubectl set image deployment/job-service job-service=ghcr.io/erfanalizada/job-service:${{ github.sha }}
+          kubectl set image deployment/job-service job-service=ghcr.io/${{ secrets.GHCR_USERNAME }}/job-service:${{ github.sha }}
           kubectl rollout status deployment/job-service
           kubectl get pods -o wide
 
@@ -99,10 +109,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u erfanalizada --password-stdin
-      - run: |
-          docker build -t ghcr.io/erfanalizada/cv-service:${{ github.sha }} ./backend/cv-service
-          docker push ghcr.io/erfanalizada/cv-service:${{ github.sha }}
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+      - name: Build & push cv-service
+        run: |
+          docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/cv-service:${{ github.sha }} ./backend/cv-service
+          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/cv-service:${{ github.sha }}
+          docker tag ghcr.io/${{ secrets.GHCR_USERNAME }}/cv-service:${{ github.sha }} ghcr.io/${{ secrets.GHCR_USERNAME }}/cv-service:latest
+          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/cv-service:latest
       - run: pip install --upgrade pip && pip install oci-cli
       - run: |
           mkdir -p $HOME/.oci
@@ -114,7 +128,7 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
       - run: |
-          kubectl set image deployment/cv-service cv-service=ghcr.io/erfanalizada/cv-service:${{ github.sha }}
+          kubectl set image deployment/cv-service cv-service=ghcr.io/${{ secrets.GHCR_USERNAME }}/cv-service:${{ github.sha }}
           kubectl rollout status deployment/cv-service
           kubectl get pods -o wide
 
@@ -123,10 +137,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u erfanalizada --password-stdin
-      - run: |
-          docker build -t ghcr.io/erfanalizada/matching-service:${{ github.sha }} ./backend/matching-service
-          docker push ghcr.io/erfanalizada/matching-service:${{ github.sha }}
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+      - name: Build & push matching-service
+        run: |
+          docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/matching-service:${{ github.sha }} ./backend/matching-service
+          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/matching-service:${{ github.sha }}
+          docker tag ghcr.io/${{ secrets.GHCR_USERNAME }}/matching-service:${{ github.sha }} ghcr.io/${{ secrets.GHCR_USERNAME }}/matching-service:latest
+          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/matching-service:latest
       - run: pip install --upgrade pip && pip install oci-cli
       - run: |
           mkdir -p $HOME/.oci
@@ -138,7 +156,7 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
       - run: |
-          kubectl set image deployment/matching-service matching-service=ghcr.io/erfanalizada/matching-service:${{ github.sha }}
+          kubectl set image deployment/matching-service matching-service=ghcr.io/${{ secrets.GHCR_USERNAME }}/matching-service:${{ github.sha }}
           kubectl rollout status deployment/matching-service
           kubectl get pods -o wide
 
@@ -147,10 +165,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u erfanalizada --password-stdin
-      - run: |
-          docker build -t ghcr.io/erfanalizada/notification-service:${{ github.sha }} ./backend/notification-service
-          docker push ghcr.io/erfanalizada/notification-service:${{ github.sha }}
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+      - name: Build & push notification-service
+        run: |
+          docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/notification-service:${{ github.sha }} ./backend/notification-service
+          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/notification-service:${{ github.sha }}
+          docker tag ghcr.io/${{ secrets.GHCR_USERNAME }}/notification-service:${{ github.sha }} ghcr.io/${{ secrets.GHCR_USERNAME }}/notification-service:latest
+          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/notification-service:latest
       - run: pip install --upgrade pip && pip install oci-cli
       - run: |
           mkdir -p $HOME/.oci
@@ -162,7 +184,7 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
       - run: |
-          kubectl set image deployment/notification-service notification-service=ghcr.io/erfanalizada/notification-service:${{ github.sha }}
+          kubectl set image deployment/notification-service notification-service=ghcr.io/${{ secrets.GHCR_USERNAME }}/notification-service:${{ github.sha }}
           kubectl rollout status deployment/notification-service
           kubectl get pods -o wide
 
@@ -171,10 +193,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u erfanalizada --password-stdin
-      - run: |
-          docker build -t ghcr.io/erfanalizada/talentlink-frontend:${{ github.sha }} ./frontend
-          docker push ghcr.io/erfanalizada/talentlink-frontend:${{ github.sha }}
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+      - name: Build & push frontend
+        run: |
+          docker build -t ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-frontend:${{ github.sha }} ./frontend
+          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-frontend:${{ github.sha }}
+          docker tag ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-frontend:${{ github.sha }} ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-frontend:latest
+          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-frontend:latest
       - run: pip install --upgrade pip && pip install oci-cli
       - run: |
           mkdir -p $HOME/.oci
@@ -186,6 +212,6 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
       - run: |
-          kubectl set image deployment/frontend frontend=ghcr.io/erfanalizada/talentlink-frontend:${{ github.sha }}
+          kubectl set image deployment/frontend frontend=ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-frontend:${{ github.sha }}
           kubectl rollout status deployment/frontend
           kubectl get pods -o wide
