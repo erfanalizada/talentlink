@@ -1,36 +1,36 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: job-service
+  name: cv-service
   labels:
-    app: job-service
+    app: cv-service
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: job-service
+      app: cv-service
   template:
     metadata:
       labels:
-        app: job-service
+        app: cv-service
     spec:
       imagePullSecrets:
         - name: ghcr-secret
       containers:
-        - name: job-service
-          image: ghcr.io/erfanalizada/job-service:latest
-          imagePullPolicy: Always
+        - name: cv-service
+          image: ghcr.io/erfanalizada/cv-service   # ✅ no tag, CI/CD injects SHA
+          imagePullPolicy: IfNotPresent            # ✅ avoids re-pulling every time
           ports:
             - containerPort: 5000
           readinessProbe:
             httpGet:
-              path: /api/jobs/health
+              path: /api/cv/health
               port: 5000
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /api/jobs/health
+              path: /api/cv/health
               port: 5000
             initialDelaySeconds: 10
             periodSeconds: 20
@@ -38,11 +38,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: job-service
+  name: cv-service
 spec:
   type: ClusterIP
   selector:
-    app: job-service
+    app: cv-service
   ports:
     - port: 5000
       targetPort: 5000

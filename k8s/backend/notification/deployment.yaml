@@ -1,36 +1,36 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: user-service
+  name: notification-service
   labels:
-    app: user-service
+    app: notification-service
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: user-service
+      app: notification-service
   template:
     metadata:
       labels:
-        app: user-service
+        app: notification-service
     spec:
       imagePullSecrets:
         - name: ghcr-secret
       containers:
-        - name: user-service
-          image: ghcr.io/erfanalizada/user-service:latest
-          imagePullPolicy: Always
+        - name: notification-service
+          image: ghcr.io/erfanalizada/notification-service   # ✅ no ":latest", CI/CD injects SHA
+          imagePullPolicy: IfNotPresent                      # ✅ avoids unnecessary re-pulls
           ports:
             - containerPort: 5000
           readinessProbe:
             httpGet:
-              path: /api/users/health
+              path: /api/notifications/health
               port: 5000
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /api/users/health
+              path: /api/notifications/health
               port: 5000
             initialDelaySeconds: 10
             periodSeconds: 20
@@ -38,11 +38,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: user-service
+  name: notification-service
 spec:
   type: ClusterIP
   selector:
-    app: user-service
+    app: notification-service
   ports:
     - port: 5000
       targetPort: 5000

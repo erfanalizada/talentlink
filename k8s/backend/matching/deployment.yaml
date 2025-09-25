@@ -1,36 +1,36 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cv-service
+  name: matching-service
   labels:
-    app: cv-service
+    app: matching-service
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: cv-service
+      app: matching-service
   template:
     metadata:
       labels:
-        app: cv-service
+        app: matching-service
     spec:
       imagePullSecrets:
         - name: ghcr-secret
       containers:
-        - name: cv-service
-          image: ghcr.io/erfanalizada/cv-service:latest
-          imagePullPolicy: Always
+        - name: matching-service
+          image: ghcr.io/erfanalizada/matching-service   # ✅ no tag, CI/CD injects SHA
+          imagePullPolicy: IfNotPresent                  # ✅ avoids unnecessary re-pulls
           ports:
             - containerPort: 5000
           readinessProbe:
             httpGet:
-              path: /api/cv/health
+              path: /api/matching/health
               port: 5000
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /api/cv/health
+              path: /api/matching/health
               port: 5000
             initialDelaySeconds: 10
             periodSeconds: 20
@@ -38,11 +38,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: cv-service
+  name: matching-service
 spec:
   type: ClusterIP
   selector:
-    app: cv-service
+    app: matching-service
   ports:
     - port: 5000
       targetPort: 5000
