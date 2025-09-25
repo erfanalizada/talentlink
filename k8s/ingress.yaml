@@ -16,6 +16,7 @@ spec:
   - host: talentlink-erfan.nl
     http:
       paths:
+      # ---------------- FRONTEND ----------------
       - path: /
         pathType: Prefix
         backend:
@@ -23,10 +24,52 @@ spec:
             name: frontend-service
             port:
               number: 80
-      - path: /api           
+
+      # ---------------- BACKEND MICROSERVICES ----------------
+      - path: /api/auth
         pathType: Prefix
         backend:
           service:
-            name: backend-service
+            name: auth-service
+            port:
+              number: 5000
+
+      - path: /api/users
+        pathType: Prefix
+        backend:
+          service:
+            name: user-service
+            port:
+              number: 5000
+
+      - path: /api/jobs
+        pathType: Prefix
+        backend:
+          service:
+            name: job-service
+            port:
+              number: 5000
+
+      - path: /api/cv
+        pathType: Prefix
+        backend:
+          service:
+            name: cv-service
+            port:
+              number: 5000
+
+      - path: /api/matching
+        pathType: Prefix
+        backend:
+          service:
+            name: matching-service
+            port:
+              number: 5000
+
+      - path: /api/notifications
+        pathType: Prefix
+        backend:
+          service:
+            name: notification-service
             port:
               number: 5000
