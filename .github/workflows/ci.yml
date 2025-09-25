@@ -6,7 +6,7 @@ on:
 
 permissions:
   contents: read
-  packages: write   # needed for pushing to GHCR
+  packages: write   # required for pushing to GHCR
 
 jobs:
   build-and-push:
@@ -15,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Log in to GHCR using GitHub's built-in token
+      # ✅ Fixed: Log in to GHCR using GitHub's built-in token
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
@@ -36,14 +36,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Install OCI CLI so kubeconfig exec works
       - name: Install OCI CLI
         run: |
           pip install --upgrade pip
           pip install oci-cli
           oci --version
 
-      # Configure OCI credentials
       - name: Configure OCI CLI
         run: |
           mkdir -p $HOME/.oci
@@ -51,28 +49,23 @@ jobs:
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
           chmod 600 $HOME/.oci/oci_api_key.pem
 
-      # Configure kubeconfig for kubectl
       - name: Configure kubeconfig
         run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
-      # Apply manifests
       - name: Deploy manifests
         run: kubectl apply -f k8s/
 
-      # Force restart deployments so new images are pulled
       - name: Restart backend deployment
         run: kubectl rollout restart deployment backend --namespace=default
 
       - name: Restart frontend deployment
         run: kubectl rollout restart deployment frontend --namespace=default
 
-      # Debug: Show pods status after deployment
       - name: Get pods after deploy
         run: kubectl get pods -n default -o wide
 
-      # Print frontend service external IP (URL for your app)
       - name: Get frontend service external IP
         run: kubectl get svc frontend-service -n default -o wide
