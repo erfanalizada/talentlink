@@ -28,9 +28,14 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = [
-    const HelloBackendPage(),
-    const RegistrationPage(),
+  final List<Widget> _pages = const [
+    ApiTestPage(title: "Hello Service", url: "/api/hello"),
+    ApiTestPage(title: "Auth Service", url: "/api/auth/health"),
+    ApiTestPage(title: "User Service", url: "/api/users/health"),
+    ApiTestPage(title: "Job Service", url: "/api/jobs/health"),
+    ApiTestPage(title: "CV Service", url: "/api/cv/health"),
+    ApiTestPage(title: "Matching Service", url: "/api/matching/health"),
+    ApiTestPage(title: "Notification Service", url: "/api/notifications/health"),
   ];
 
   void _onItemTapped(int index) {
@@ -44,40 +49,40 @@ class _MyHomePageState extends State<MyHomePage> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.cloud),
-            label: "Hello API",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_add),
-            label: "Register",
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.waving_hand), label: "Hello"),
+          BottomNavigationBarItem(icon: Icon(Icons.lock), label: "Auth"),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: "User"),
+          BottomNavigationBarItem(icon: Icon(Icons.work), label: "Jobs"),
+          BottomNavigationBarItem(icon: Icon(Icons.description), label: "CV"),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: "Match"),
+          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: "Notify"),
         ],
       ),
     );
   }
 }
 
-// ---------------- HELLO BACKEND PAGE ----------------
-class HelloBackendPage extends StatefulWidget {
-  const HelloBackendPage({super.key});
+/// A reusable widget to call any service endpoint
+class ApiTestPage extends StatefulWidget {
+  final String title;
+  final String url;
+
+  const ApiTestPage({super.key, required this.title, required this.url});
 
   @override
-  State<HelloBackendPage> createState() => _HelloBackendPageState();
+  State<ApiTestPage> createState() => _ApiTestPageState();
 }
 
-class _HelloBackendPageState extends State<HelloBackendPage> {
+class _ApiTestPageState extends State<ApiTestPage> {
   String _response = "No response yet";
 
-  Future<void> _callBackend() async {
+  Future<void> _callApi() async {
     try {
-      final res = await http.get(Uri.parse('/api/hello')); // adapt your backend URL
+      final res = await http.get(Uri.parse(widget.url));
       if (res.statusCode == 200) {
-        final body = jsonDecode(res.body);
-        setState(() {
-          _response = body['message'] ?? "No message field";
-        });
+        setState(() => _response = res.body);
       } else {
         setState(() => _response = "Error: ${res.statusCode}");
       }
@@ -89,133 +94,18 @@ class _HelloBackendPageState extends State<HelloBackendPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Hello Backend")),
+      appBar: AppBar(title: Text(widget.title)),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(_response, style: const TextStyle(fontSize: 18)),
+            Text(_response, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: _callBackend,
-              child: const Text("Call Backend"),
+              onPressed: _callApi,
+              child: Text("Call ${widget.title}"),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------- REGISTRATION PAGE ----------------
-class RegistrationPage extends StatefulWidget {
-  const RegistrationPage({super.key});
-
-  @override
-  State<RegistrationPage> createState() => _RegistrationPageState();
-}
-
-class _RegistrationPageState extends State<RegistrationPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
-
-  bool _isLoading = false;
-
-  Future<void> _register() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      final response = await http.post(
-        Uri.parse('/api/register'), // adapt your backend URL
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "name": _nameCtrl.text,
-          "email": _emailCtrl.text,
-          "password": _passwordCtrl.text,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Registration successful!")),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: ${response.body}")),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed: $e")),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Register")),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _nameCtrl,
-                decoration: const InputDecoration(
-                  labelText: "Full Name",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.person),
-                ),
-                validator: (value) =>
-                    value!.isEmpty ? "Enter your name" : null,
-              ),
-              const SizedBox(height: 15),
-              TextFormField(
-                controller: _emailCtrl,
-                decoration: const InputDecoration(
-                  labelText: "Email",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
-                ),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) =>
-                    value!.contains("@") ? null : "Enter a valid email",
-              ),
-              const SizedBox(height: 15),
-              TextFormField(
-                controller: _passwordCtrl,
-                decoration: const InputDecoration(
-                  labelText: "Password",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock),
-                ),
-                obscureText: true,
-                validator: (value) =>
-                    value!.length < 6 ? "Password must be at least 6 chars" : null,
-              ),
-              const SizedBox(height: 25),
-              _isLoading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: _register,
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text("Register", style: TextStyle(fontSize: 18)),
-                    ),
-            ],
-          ),
         ),
       ),
     );
