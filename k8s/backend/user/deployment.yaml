@@ -1,36 +1,36 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: auth-service
+  name: user-service
   labels:
-    app: auth-service
+    app: user-service
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: auth-service
+      app: user-service
   template:
     metadata:
       labels:
-        app: auth-service
+        app: user-service
     spec:
       imagePullSecrets:
         - name: ghcr-secret
       containers:
-        - name: auth-service
-          image: ghcr.io/erfanalizada/auth-service:latest
-          imagePullPolicy: Always
+        - name: user-service
+          image: ghcr.io/erfanalizada/user-service   # ✅ CI/CD will append SHA
+          imagePullPolicy: IfNotPresent              # ✅ avoids unnecessary re-pulls
           ports:
             - containerPort: 5000
           readinessProbe:
             httpGet:
-              path: /api/auth/health
+              path: /api/users/health
               port: 5000
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /api/auth/health
+              path: /api/users/health
               port: 5000
             initialDelaySeconds: 10
             periodSeconds: 20
@@ -38,11 +38,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: auth-service
+  name: user-service
 spec:
   type: ClusterIP
   selector:
-    app: auth-service
+    app: user-service
   ports:
     - port: 5000
       targetPort: 5000

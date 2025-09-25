@@ -1,36 +1,36 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: matching-service
+  name: auth-service
   labels:
-    app: matching-service
+    app: auth-service
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: matching-service
+      app: auth-service
   template:
     metadata:
       labels:
-        app: matching-service
+        app: auth-service
     spec:
       imagePullSecrets:
         - name: ghcr-secret
       containers:
-        - name: matching-service
-          image: ghcr.io/erfanalizada/matching-service:latest
-          imagePullPolicy: Always
+        - name: auth-service
+          image: ghcr.io/erfanalizada/auth-service  # ✅ no tag, CI/CD will set SHA
+          imagePullPolicy: IfNotPresent             # ✅ better than Always
           ports:
             - containerPort: 5000
           readinessProbe:
             httpGet:
-              path: /api/matching/health
+              path: /api/auth/health
               port: 5000
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /api/matching/health
+              path: /api/auth/health
               port: 5000
             initialDelaySeconds: 10
             periodSeconds: 20
@@ -38,11 +38,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: matching-service
+  name: auth-service
 spec:
   type: ClusterIP
   selector:
-    app: matching-service
+    app: auth-service
   ports:
     - port: 5000
       targetPort: 5000

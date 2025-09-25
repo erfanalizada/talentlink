@@ -18,8 +18,8 @@ spec:
         - name: ghcr-secret
       containers:
         - name: frontend
-          image: ghcr.io/erfanalizada/talentlink-frontend:latest
-          imagePullPolicy: Always
+          image: ghcr.io/erfanalizada/talentlink-frontend   # ✅ CI/CD appends SHA
+          imagePullPolicy: IfNotPresent                     # ✅ avoids unnecessary re-pulls
           ports:
             - containerPort: 80   # Nginx listens on port 80
           resources:
@@ -41,3 +41,15 @@ spec:
               port: 80
             initialDelaySeconds: 10
             periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  type: ClusterIP   # ✅ frontend exposed via Ingress, no need for LoadBalancer here
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 80
