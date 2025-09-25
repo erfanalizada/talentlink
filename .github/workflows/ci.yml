@@ -3,37 +3,39 @@ name: CI/CD
 on:
   push:
     branches: [ main ]
+    paths:
+      - "backend/auth-service/**"
+      - "backend/user-service/**"
+      - "backend/job-service/**"
+      - "backend/cv-service/**"
+      - "backend/matching-service/**"
+      - "backend/notification-service/**"
+      - "frontend/**"
+      - "k8s/**"
 
 permissions:
   contents: read
-  packages: write   # required for pushing to GHCR
+  packages: write
 
 jobs:
+  # ---------------- AUTH SERVICE ----------------
   build-and-deploy-auth:
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.message, '[auth]') || github.event_name == 'workflow_dispatch'
+    if: contains(github.event.head_commit.message, '[skip-ci]') == false && (github.event.head_commit.message != '')
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # Log in to GHCR
       - name: Log in to GHCR
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u erfanalizada --password-stdin
 
-      # Build & push image
       - name: Build & push auth-service
         run: |
           docker build -t ghcr.io/erfanalizada/auth-service:${{ github.sha }} ./backend/auth-service
           docker push ghcr.io/erfanalizada/auth-service:${{ github.sha }}
 
-      # Install OCI CLI
       - name: Install OCI CLI
-        run: |
-          pip install --upgrade pip
-          pip install oci-cli
-          oci --version
+        run: pip install --upgrade pip && pip install oci-cli
 
-      # Configure OCI CLI
       - name: Configure OCI CLI
         run: |
           mkdir -p $HOME/.oci
@@ -41,14 +43,12 @@ jobs:
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
           chmod 600 $HOME/.oci/oci_api_key.pem
 
-      # Configure kubeconfig
       - name: Configure kubeconfig
         run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
-      # Deploy updated image
       - name: Deploy auth-service
         run: |
           kubectl set image deployment/auth-service auth-service=ghcr.io/erfanalizada/auth-service:${{ github.sha }}
@@ -57,7 +57,6 @@ jobs:
   # ---------------- USER SERVICE ----------------
   build-and-deploy-user:
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.message, '[user]') || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
       - run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u erfanalizada --password-stdin
@@ -81,7 +80,6 @@ jobs:
   # ---------------- JOB SERVICE ----------------
   build-and-deploy-job:
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.message, '[job]') || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
       - run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u erfanalizada --password-stdin
@@ -105,7 +103,6 @@ jobs:
   # ---------------- CV SERVICE ----------------
   build-and-deploy-cv:
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.message, '[cv]') || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
       - run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u erfanalizada --password-stdin
@@ -129,7 +126,6 @@ jobs:
   # ---------------- MATCHING SERVICE ----------------
   build-and-deploy-matching:
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.message, '[matching]') || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
       - run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u erfanalizada --password-stdin
@@ -153,7 +149,6 @@ jobs:
   # ---------------- NOTIFICATION SERVICE ----------------
   build-and-deploy-notification:
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.message, '[notification]') || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
       - run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u erfanalizada --password-stdin
@@ -177,7 +172,6 @@ jobs:
   # ---------------- FRONTEND ----------------
   build-and-deploy-frontend:
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.message, '[frontend]') || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
       - run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u erfanalizada --password-stdin
