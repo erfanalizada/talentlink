@@ -18,31 +18,42 @@ spec:
         - name: ghcr-secret
       containers:
         - name: keycloak
-          image: ghcr.io/erfanalizada/keycloak  # CI/CD injects :<sha>
+          image: ghcr.io/erfanalizada/keycloak:${GITHUB_SHA}   # updated automatically by CI/CD
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
               containerPort: 8080
+
+          # Attach DB + Keycloak config
           envFrom:
-            - secretRef:
-                name: keycloak-db
             - configMapRef:
                 name: keycloak-config
+            - secretRef:
+                name: keycloak-db
+
+          # Java runtime options (append, not override)
           env:
-            - name: JAVA_OPTS
-              value: "-Doracle.net.ssl_server_dn_match=true"
+            - name: JAVA_OPTS_APPEND
+              value: >
+                -Djavax.net.ssl.trustStore=/opt/keycloak/truststore.jks
+                -Djavax.net.ssl.trustStorePassword=changeit
+                -Djavax.net.ssl.trustStoreType=PKCS12
+                -Doracle.net.ssl_server_dn_match=true
+
           readinessProbe:
             httpGet:
               path: /health/ready
               port: 8080
             initialDelaySeconds: 20
             periodSeconds: 10
+
           livenessProbe:
             httpGet:
               path: /health/live
               port: 8080
             initialDelaySeconds: 40
             periodSeconds: 20
+
           resources:
             requests:
               cpu: "250m"
@@ -50,4 +61,3 @@ spec:
             limits:
               cpu: "1"
               memory: "1Gi"
-

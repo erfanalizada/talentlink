@@ -1,21 +1,26 @@
-# Use official Keycloak base image
+# Use official Keycloak image
 FROM quay.io/keycloak/keycloak:25.0
 
-# Copy Oracle JDBC driver and TLS truststore
+# Switch to root to add files
+USER root
+
+# Copy Oracle JDBC driver and truststore
 COPY drivers/ojdbc11.jar /opt/keycloak/providers/
-COPY truststore.jks /opt/keycloak/conf/truststore.jks
+COPY truststore.jks /opt/keycloak/truststore.jks
 
-# Environment variables for Keycloak
-ENV KC_DB=oracle
-ENV KC_DB_URL="jdbc:oracle:thin:@(description=(retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1521)(host=adb.eu-amsterdam-1.oraclecloud.com))(connect_data=(service_name=g49f31b19d33266_keycloakauth_high.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))"
-ENV KC_DB_USERNAME=keycloak_user
-ENV KC_DB_PASSWORD=Keycloak123!
-ENV JAVA_OPTS_APPEND="-Djavax.net.ssl.trustStore=/opt/keycloak/conf/truststore.jks -Djavax.net.ssl.trustStorePassword=changeit"
+# Safety check – fail the build if the truststore wasn’t copied
+RUN if [ ! -f /opt/keycloak/truststore.jks ]; then \
+      echo "ERROR: truststore.jks missing!" && exit 1; \
+    fi
 
-# Build Keycloak image with the Oracle driver
+# Build Keycloak configuration
 RUN /opt/keycloak/bin/kc.sh build
 
+# Drop back to keycloak user
+USER keycloak
+
+# Expose HTTP port
 EXPOSE 8080
 
-# Start Keycloak in production mode
-ENTRYPOINT ["/opt/keycloak/bin/kc.sh", "start", "--optimized"]
+# Start Keycloak
+ENTRYPOINT ["/opt/keycloak/bin/kc.sh", "start"]
