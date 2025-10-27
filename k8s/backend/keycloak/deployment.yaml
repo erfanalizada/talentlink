@@ -14,35 +14,47 @@ spec:
       labels:
         app: keycloak
     spec:
+      # 🔒 Allow pulling from private GHCR (use ghcr-secret)
       imagePullSecrets:
         - name: ghcr-secret
+
       containers:
         - name: keycloak
-          image: ghcr.io/YOUR_GITHUB_USERNAME/keycloak:latest
+          # 🧩 Image name without tag — CI/CD will inject :<sha>
+          image: ghcr.io/erfanalizada/keycloak
           imagePullPolicy: IfNotPresent
+
           ports:
             - name: http
               containerPort: 8080
+
           envFrom:
             - secretRef:
-                name: keycloak-db
+                name: keycloak-db         # contains DB_USER, DB_PASSWORD
             - configMapRef:
-                name: keycloak-config
+                name: keycloak-config     # contains KC_* environment vars
+
           env:
+            # ✅ Enforce TLS verification with Oracle DB
             - name: JAVA_OPTS
               value: "-Doracle.net.ssl_server_dn_match=true"
+
+          # 🩺 Health probes
           readinessProbe:
             httpGet:
               path: /health/ready
               port: 8080
             initialDelaySeconds: 20
             periodSeconds: 10
+
           livenessProbe:
             httpGet:
               path: /health/live
               port: 8080
             initialDelaySeconds: 40
             periodSeconds: 20
+
+          # 💪 Resource requests & limits
           resources:
             requests:
               cpu: "250m"

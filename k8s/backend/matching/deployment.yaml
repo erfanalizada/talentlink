@@ -18,8 +18,8 @@ spec:
         - name: ghcr-secret
       containers:
         - name: matching-service
-          image: ghcr.io/erfanalizada/matching-service   # ✅ no tag, CI/CD injects SHA
-          imagePullPolicy: IfNotPresent                  # ✅ avoids unnecessary re-pulls
+          image: ghcr.io/erfanalizada/matching-service   
+          imagePullPolicy: IfNotPresent                  
           ports:
             - containerPort: 5000
           readinessProbe:
