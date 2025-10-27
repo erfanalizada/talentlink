@@ -1,43 +1,36 @@
-from flask import Flask, jsonify, request
+import os
+import oracledb
+from flask import Flask, jsonify
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
 
-# ---------------- AUTH ENDPOINTS ----------------
-@app.route("/api/auth/login", methods=["POST"])
-def login():
-    """
-    Mock login endpoint.
-    Accepts JSON { "username": "user", "password": "pass" }
-    Returns a fake token response.
-    """
-    data = request.get_json(silent=True) or {}
-    username = data.get("username", "guest")
-    return jsonify({
-        "message": f"User '{username}' logged in (mocked)",
-        "token": "fake-jwt-token-123"
-    })
+# Read from .env
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_DSN = os.getenv("DB_DSN")
 
+@app.route("/api/auth/dbtest")
+def db_test():
+    try:
+        print("🔄 Connecting to Oracle Autonomous Database (TLS, no wallet)...")
+        with oracledb.connect(
+            user=DB_USER,
+            password=DB_PASSWORD,
+            dsn=DB_DSN
+        ) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 'DB connection OK' FROM dual")
+                result = cursor.fetchone()
+                print("✅ Oracle connection success:", result[0])
+                return jsonify({"db": result[0]}), 200
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
-@app.route("/api/auth/register", methods=["POST"])
-def register():
-    """
-    Mock register endpoint.
-    Accepts JSON { "username": ..., "email": ... }
-    Returns a success message.
-    """
-    data = request.get_json(silent=True) or {}
-    username = data.get("username", "new_user")
-    return jsonify({
-        "message": f"User '{username}' registered successfully (mocked)"
-    })
-
-
-@app.route("/api/auth/health")
-def health():
-    """Health check endpoint for Kubernetes readiness/liveness probes."""
-    return jsonify({"status": "auth-service ok"}), 200
-
-
-# ---------------- MAIN ----------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

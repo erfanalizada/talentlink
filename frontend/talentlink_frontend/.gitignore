@@ -12,6 +12,10 @@
 .swiftpm/
 migrate_working_dir/
 
+wallet/
+wallet_keycloak.zip
+*.env
+
 # IntelliJ related
 *.iml
 *.ipr
