@@ -216,7 +216,7 @@ jobs:
           kubectl rollout status deployment/frontend
           kubectl get pods -o wide
 
-            # ---------------- KEYCLOAK ----------------
+             # ---------------- KEYCLOAK ----------------
   build-and-deploy-keycloak:
     runs-on: ubuntu-latest
     steps:
@@ -225,7 +225,7 @@ jobs:
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Build & push keycloak
+      - name: Build & push Keycloak image
         run: |
           docker build -t ghcr.io/${{ github.actor }}/keycloak:${{ github.sha }} ./backend/keycloak
           docker push ghcr.io/${{ github.actor }}/keycloak:${{ github.sha }}
@@ -248,11 +248,8 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
-      - name: Apply manifests
+      - name: Deploy Keycloak
         run: |
-          kubectl apply -f backend/keycloak/k8s/secret-db.yaml
-          kubectl apply -f backend/keycloak/k8s/configmap.yaml
-          kubectl apply -f backend/keycloak/k8s/service.yaml
-          kubectl apply -f backend/keycloak/k8s/deployment.yaml
+          kubectl set image deployment/keycloak keycloak=ghcr.io/${{ github.actor }}/keycloak:${{ github.sha }}
           kubectl rollout status deployment/keycloak
           kubectl get pods -o wide
