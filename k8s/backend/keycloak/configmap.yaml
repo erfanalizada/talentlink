@@ -3,7 +3,10 @@ kind: ConfigMap
 metadata:
   name: keycloak-config
 data:
-  KC_HEALTH_ENABLED: "true"
-  KC_METRICS_ENABLED: "true"
-  KC_HOSTNAME: "talentlink-erfan.nl"
-  KC_HOSTNAME_PATH: "/auth"
+  KC_DB: oracle
+  KC_DB_URL: jdbc:oracle:thin:@(description=(retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1521)(host=adb.eu-amsterdam-1.oraclecloud.com))(connect_data=(service_name=g49f31b19d33266_keycloakauth_high.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+  KC_DB_USERNAME: keycloak_user
+  KC_DB_PASSWORD: Keycloak123!
+  KC_HOSTNAME: talentlink-erfan.nl
+  KC_HOSTNAME_PATH: /auth
+  KC_PROXY: edge

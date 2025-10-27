@@ -216,7 +216,7 @@ jobs:
           kubectl rollout status deployment/frontend
           kubectl get pods -o wide
 
-             # ---------------- KEYCLOAK ----------------
+  # ---------------- KEYCLOAK ----------------
   build-and-deploy-keycloak:
     runs-on: ubuntu-latest
     steps:
@@ -225,31 +225,27 @@ jobs:
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Build & push Keycloak image
+      - name: Build & push keycloak
         run: |
           docker build -t ghcr.io/${{ github.actor }}/keycloak:${{ github.sha }} ./backend/keycloak
           docker push ghcr.io/${{ github.actor }}/keycloak:${{ github.sha }}
           docker tag ghcr.io/${{ github.actor }}/keycloak:${{ github.sha }} ghcr.io/${{ github.actor }}/keycloak:latest
           docker push ghcr.io/${{ github.actor }}/keycloak:latest
 
-      - name: Install OCI CLI
-        run: pip install --upgrade pip && pip install oci-cli
+      - run: pip install --upgrade pip && pip install oci-cli
 
-      - name: Configure OCI CLI
-        run: |
+      - run: |
           mkdir -p $HOME/.oci
           echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
           chmod 600 $HOME/.oci/oci_api_key.pem
 
-      - name: Configure kubeconfig
-        run: |
+      - run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
-      - name: Deploy Keycloak
-        run: |
+      - run: |
           kubectl set image deployment/keycloak keycloak=ghcr.io/${{ github.actor }}/keycloak:${{ github.sha }}
           kubectl rollout status deployment/keycloak
           kubectl get pods -o wide
