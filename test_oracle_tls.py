@@ -21,7 +21,7 @@ def run_app():
         print(f"❌ Oracle connection failed: {str(e)}")
     except Exception as e:
         import traceback
-        traceback.print_exc()
+        traceback.print_exc() 
 
 if __name__ == "__main__":
     run_app()
