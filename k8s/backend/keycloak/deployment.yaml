@@ -51,15 +51,3 @@ spec:
               cpu: "1"
               memory: "1Gi"
 
-
-apiVersion: v1
-kind: Service
-metadata:
-  name: keycloak
-spec:
-  selector:
-    app: keycloak
-  type: ClusterIP
-  ports:
-    - port: 8080
-      targetPort: 8080

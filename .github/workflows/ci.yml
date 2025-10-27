@@ -2,12 +2,12 @@ name: CI/CD
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
-  packages: write   # Needed for pushing images to GHCR
+  packages: write # Needed for pushing images to GHCR
 
 jobs:
   # ---------------- AUTH SERVICE ----------------
@@ -225,7 +225,7 @@ jobs:
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Build & push keycloak image
+      - name: Build & push Keycloak image
         run: |
           docker build -t ghcr.io/${{ github.actor }}/keycloak:${{ github.sha }} ./backend/keycloak
           docker push ghcr.io/${{ github.actor }}/keycloak:${{ github.sha }}
@@ -248,7 +248,7 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
-      - name: Deploy keycloak
+      - name: Deploy Keycloak
         run: |
           kubectl set image deployment/keycloak keycloak=ghcr.io/${{ github.actor }}/keycloak:${{ github.sha }}
           kubectl rollout status deployment/keycloak
