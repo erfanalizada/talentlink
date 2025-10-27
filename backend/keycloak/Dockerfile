@@ -1,15 +1,14 @@
-# Use official Keycloak image (v25+ with Quarkus)
+# Use official Keycloak base image
 FROM quay.io/keycloak/keycloak:25.0
 
-# Copy Oracle JDBC driver
+# Copy Oracle JDBC driver (for your Oracle Autonomous DB)
 COPY drivers/ojdbc11.jar /opt/keycloak/providers/
 
-# Enable health and metrics endpoints
-ENV KC_HEALTH_ENABLED=true
-ENV KC_METRICS_ENABLED=true
-
-# Build optimized Keycloak distribution
+# Build Keycloak with custom providers and configuration
 RUN /opt/keycloak/bin/kc.sh build
 
-# Start Keycloak (optimized)
-ENTRYPOINT ["/opt/keycloak/bin/kc.sh", "start", "--optimized"]
+# Expose default Keycloak port
+EXPOSE 8080
+
+# Start Keycloak in production mode
+ENTRYPOINT ["/opt/keycloak/bin/kc.sh", "start"]
