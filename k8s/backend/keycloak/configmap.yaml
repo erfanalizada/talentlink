@@ -4,20 +4,16 @@ metadata:
   name: keycloak-config
 data:
   KC_DB: oracle
-  # Use full TCPS (TLS) connection descriptor for Oracle ADB
   KC_DB_URL: >
-    jdbc:oracle:thin:@(description=
-      (retry_count=20)
-      (retry_delay=3)
-      (address=(protocol=tcps)(port=1521)(host=adb.eu-amsterdam-1.oraclecloud.com))
-      (connect_data=(service_name=g49f31b19d33266_keycloakauth_high.adb.oraclecloud.com))
-      (security=(ssl_server_dn_match=yes))
+    jdbc:oracle:thin:@(DESCRIPTION=
+      (RETRY_COUNT=20)
+      (RETRY_DELAY=3)
+      (ADDRESS=(PROTOCOL=TCPS)(PORT=1522)(HOST=adb.eu-amsterdam-1.oraclecloud.com))
+      (CONNECT_DATA=(SERVICE_NAME=g49f31b19d33266_keycloakauth_high.adb.oraclecloud.com))
+      (SECURITY=(SSL_SERVER_DN_MATCH=YES))
     )
 
   KC_DB_USERNAME: keycloak_user
-  KC_DB_PASSWORD: Keycloak123!
-
-  # Hostname settings for your public domain
   KC_HOSTNAME: talentlink-erfan.nl
   KC_HOSTNAME_PATH: /auth
   KC_PROXY: edge

@@ -248,8 +248,13 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
-      - name: Deploy Keycloak
+      - name: Deploy Keycloak to OKE
         run: |
+          # update deployment to use current commit image
           kubectl set image deployment/keycloak keycloak=ghcr.io/${{ github.actor }}/keycloak:${{ github.sha }}
-          kubectl rollout status deployment/keycloak
-          kubectl get pods -o wide
+          # ensure Kubernetes always pulls fresh images
+          kubectl patch deployment keycloak -p '{"spec":{"template":{"spec":{"containers":[{"name":"keycloak","imagePullPolicy":"Always"}]}}}}'
+          # rollout new pods and wait until healthy
+          kubectl rollout restart deployment/keycloak
+          kubectl rollout status deployment/keycloak --timeout=180s
+          kubectl get pods -l app=keycloak -o=custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[*].image
