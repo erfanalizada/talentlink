@@ -15,34 +15,70 @@ spec:
       labels:
         app: keycloak
     spec:
+      initContainers:
+        - name: fix-permissions
+          image: busybox
+          command: ["sh", "-c", "chmod -R 777 /opt/keycloak/data || true"]
+          volumeMounts:
+            - name: keycloak-data
+              mountPath: /opt/keycloak/data
       containers:
         - name: keycloak
           image: quay.io/keycloak/keycloak:26.0
           args:
-            - start-dev
-            - --http-relative-path=/keycloak
-            - --proxy=edge
+            - start
+            - --db=postgres
+            - --http-enabled=true
+            - --http-port=8080
             - --hostname-strict=false
+            - --hostname=talentlink-erfan.nl
+            - --proxy-headers=xforwarded
+            - --db-url=jdbc:postgresql://keycloak-db-postgresql:5432/keycloak
+            - --db-username=keycloak
+            - --db-password=StrongPassword123
           envFrom:
             - secretRef:
                 name: keycloak-admin
-          env:
-            - name: KC_HOSTNAME
-              value: talentlink-erfan.nl
-            - name: KC_PROXY_HEADERS
-              value: xforwarded
           ports:
             - name: http
               containerPort: 8080
           readinessProbe:
-            httpGet:
-              path: /keycloak/health/ready
-              port: http
-            initialDelaySeconds: 20
-            periodSeconds: 10
-          livenessProbe:
-            httpGet:
-              path: /keycloak/health/live
+            tcpSocket:
               port: http
             initialDelaySeconds: 30
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 6
+          volumeMounts:
+            - name: keycloak-data
+              mountPath: /opt/keycloak/data
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+      volumes:
+        - name: keycloak-data
+          persistentVolumeClaim:
+            claimName: keycloak-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: keycloak-data
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

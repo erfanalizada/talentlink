@@ -77,12 +77,3 @@ spec:
                 name: notification-service
                 port:
                   number: 5000
-
-          # ---------------- KEYCLOAK ----------------
-          - path: /auth/?(.*)             # ✅ regex-friendly form
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: keycloak
-                port:
-                  number: 8080
