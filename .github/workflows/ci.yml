@@ -26,16 +26,6 @@ jobs:
           docker tag ghcr.io/${{ github.actor }}/auth-service:${{ github.sha }} ghcr.io/${{ github.actor }}/auth-service:latest
           docker push ghcr.io/${{ github.actor }}/auth-service:latest
 
-      - name: Install OCI CLI
-        run: pip install --upgrade pip && pip install oci-cli
-
-      - name: Configure OCI CLI
-        run: |
-          mkdir -p $HOME/.oci
-          echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
-          echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
-          chmod 600 $HOME/.oci/oci_api_key.pem
-
       - name: Configure kubeconfig
         run: |
           mkdir -p $HOME/.kube
@@ -47,6 +37,7 @@ jobs:
           kubectl set image deployment/auth-service auth-service=ghcr.io/${{ github.actor }}/auth-service:${{ github.sha }}
           kubectl rollout status deployment/auth-service
           kubectl get pods -o wide
+
 
   # ---------------- USER SERVICE ----------------
   build-and-deploy-user:
@@ -61,20 +52,17 @@ jobs:
           docker push ghcr.io/${{ github.actor }}/user-service:${{ github.sha }}
           docker tag ghcr.io/${{ github.actor }}/user-service:${{ github.sha }} ghcr.io/${{ github.actor }}/user-service:latest
           docker push ghcr.io/${{ github.actor }}/user-service:latest
-      - run: pip install --upgrade pip && pip install oci-cli
-      - run: |
-          mkdir -p $HOME/.oci
-          echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
-          echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
-          chmod 600 $HOME/.oci/oci_api_key.pem
-      - run: |
+      - name: Configure kubeconfig
+        run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
-      - run: |
+      - name: Deploy user-service
+        run: |
           kubectl set image deployment/user-service user-service=ghcr.io/${{ github.actor }}/user-service:${{ github.sha }}
           kubectl rollout status deployment/user-service
           kubectl get pods -o wide
+
 
   # ---------------- JOB SERVICE ----------------
   build-and-deploy-job:
@@ -89,20 +77,17 @@ jobs:
           docker push ghcr.io/${{ github.actor }}/job-service:${{ github.sha }}
           docker tag ghcr.io/${{ github.actor }}/job-service:${{ github.sha }} ghcr.io/${{ github.actor }}/job-service:latest
           docker push ghcr.io/${{ github.actor }}/job-service:latest
-      - run: pip install --upgrade pip && pip install oci-cli
-      - run: |
-          mkdir -p $HOME/.oci
-          echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
-          echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
-          chmod 600 $HOME/.oci/oci_api_key.pem
-      - run: |
+      - name: Configure kubeconfig
+        run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
-      - run: |
+      - name: Deploy job-service
+        run: |
           kubectl set image deployment/job-service job-service=ghcr.io/${{ github.actor }}/job-service:${{ github.sha }}
           kubectl rollout status deployment/job-service
           kubectl get pods -o wide
+
 
   # ---------------- CV SERVICE ----------------
   build-and-deploy-cv:
@@ -117,20 +102,17 @@ jobs:
           docker push ghcr.io/${{ github.actor }}/cv-service:${{ github.sha }}
           docker tag ghcr.io/${{ github.actor }}/cv-service:${{ github.sha }} ghcr.io/${{ github.actor }}/cv-service:latest
           docker push ghcr.io/${{ github.actor }}/cv-service:latest
-      - run: pip install --upgrade pip && pip install oci-cli
-      - run: |
-          mkdir -p $HOME/.oci
-          echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
-          echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
-          chmod 600 $HOME/.oci/oci_api_key.pem
-      - run: |
+      - name: Configure kubeconfig
+        run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
-      - run: |
+      - name: Deploy cv-service
+        run: |
           kubectl set image deployment/cv-service cv-service=ghcr.io/${{ github.actor }}/cv-service:${{ github.sha }}
           kubectl rollout status deployment/cv-service
           kubectl get pods -o wide
+
 
   # ---------------- MATCHING SERVICE ----------------
   build-and-deploy-matching:
@@ -145,20 +127,17 @@ jobs:
           docker push ghcr.io/${{ github.actor }}/matching-service:${{ github.sha }}
           docker tag ghcr.io/${{ github.actor }}/matching-service:${{ github.sha }} ghcr.io/${{ github.actor }}/matching-service:latest
           docker push ghcr.io/${{ github.actor }}/matching-service:latest
-      - run: pip install --upgrade pip && pip install oci-cli
-      - run: |
-          mkdir -p $HOME/.oci
-          echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
-          echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
-          chmod 600 $HOME/.oci/oci_api_key.pem
-      - run: |
+      - name: Configure kubeconfig
+        run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
-      - run: |
+      - name: Deploy matching-service
+        run: |
           kubectl set image deployment/matching-service matching-service=ghcr.io/${{ github.actor }}/matching-service:${{ github.sha }}
           kubectl rollout status deployment/matching-service
           kubectl get pods -o wide
+
 
   # ---------------- NOTIFICATION SERVICE ----------------
   build-and-deploy-notification:
@@ -173,20 +152,17 @@ jobs:
           docker push ghcr.io/${{ github.actor }}/notification-service:${{ github.sha }}
           docker tag ghcr.io/${{ github.actor }}/notification-service:${{ github.sha }} ghcr.io/${{ github.actor }}/notification-service:latest
           docker push ghcr.io/${{ github.actor }}/notification-service:latest
-      - run: pip install --upgrade pip && pip install oci-cli
-      - run: |
-          mkdir -p $HOME/.oci
-          echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
-          echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
-          chmod 600 $HOME/.oci/oci_api_key.pem
-      - run: |
+      - name: Configure kubeconfig
+        run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
-      - run: |
+      - name: Deploy notification-service
+        run: |
           kubectl set image deployment/notification-service notification-service=ghcr.io/${{ github.actor }}/notification-service:${{ github.sha }}
           kubectl rollout status deployment/notification-service
           kubectl get pods -o wide
+
 
   # ---------------- FRONTEND ----------------
   build-and-deploy-frontend:
@@ -201,46 +177,23 @@ jobs:
           docker push ghcr.io/${{ github.actor }}/talentlink-frontend:${{ github.sha }}
           docker tag ghcr.io/${{ github.actor }}/talentlink-frontend:${{ github.sha }} ghcr.io/${{ github.actor }}/talentlink-frontend:latest
           docker push ghcr.io/${{ github.actor }}/talentlink-frontend:latest
-      - run: pip install --upgrade pip && pip install oci-cli
-      - run: |
-          mkdir -p $HOME/.oci
-          echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
-          echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
-          chmod 600 $HOME/.oci/oci_api_key.pem
-      - run: |
+      - name: Configure kubeconfig
+        run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
-      - run: |
+      - name: Deploy frontend
+        run: |
           kubectl set image deployment/frontend frontend=ghcr.io/${{ github.actor }}/talentlink-frontend:${{ github.sha }}
           kubectl rollout status deployment/frontend
           kubectl get pods -o wide
 
+
   # ---------------- KEYCLOAK ----------------
-  build-and-deploy-keycloak:
+  deploy-keycloak:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Log in to GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-
-      - name: Build & push Keycloak image
-        run: |
-          docker build -t ghcr.io/${{ github.actor }}/keycloak:${{ github.sha }} ./backend/keycloak
-          docker push ghcr.io/${{ github.actor }}/keycloak:${{ github.sha }}
-          docker tag ghcr.io/${{ github.actor }}/keycloak:${{ github.sha }} ghcr.io/${{ github.actor }}/keycloak:latest
-          docker push ghcr.io/${{ github.actor }}/keycloak:latest
-
-      - name: Install OCI CLI
-        run: pip install --upgrade pip && pip install oci-cli
-
-      - name: Configure OCI CLI
-        run: |
-          mkdir -p $HOME/.oci
-          echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
-          echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
-          chmod 600 $HOME/.oci/oci_api_key.pem
 
       - name: Configure kubeconfig
         run: |
@@ -248,13 +201,21 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
-      - name: Deploy Keycloak to OKE
+      - name: Create/Update Keycloak admin secret
         run: |
-          # update deployment to use current commit image
-          kubectl set image deployment/keycloak keycloak=ghcr.io/${{ github.actor }}/keycloak:${{ github.sha }}
-          # ensure Kubernetes always pulls fresh images
-          kubectl patch deployment keycloak -p '{"spec":{"template":{"spec":{"containers":[{"name":"keycloak","imagePullPolicy":"Always"}]}}}}'
-          # rollout new pods and wait until healthy
-          kubectl rollout restart deployment/keycloak
-          kubectl rollout status deployment/keycloak --timeout=180s
-          kubectl get pods -l app=keycloak -o=custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[*].image
+          kubectl create secret generic keycloak-admin \
+            --namespace default \
+            --from-literal=KEYCLOAK_ADMIN='${{ secrets.KEYCLOAK_ADMIN }}' \
+            --from-literal=KEYCLOAK_ADMIN_PASSWORD='${{ secrets.KEYCLOAK_ADMIN_PASSWORD }}' \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy Keycloak manifests
+        run: |
+          kubectl apply -f k8s/backend/keycloak/deployment.yaml
+          kubectl apply -f k8s/backend/keycloak/service.yaml
+          kubectl apply -f k8s/backend/keycloak/ingress.yaml
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/keycloak -n default
+          kubectl get pods -n default -o wide
