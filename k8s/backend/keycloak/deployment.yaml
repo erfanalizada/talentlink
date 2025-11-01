@@ -31,15 +31,18 @@ spec:
             - --db=postgres
             - --http-enabled=true
             - --http-port=8080
-            - --proxy-headers=xforwarded
-            - --hostname=keycloak.erfanalizada-github.ts.net
+            - --proxy=edge                        # FIX redirect loop
+            - --hostname=talentlink-erfan.nl
             - --hostname-strict=true
             - --db-url=jdbc:postgresql://keycloak-db-postgresql:5432/keycloak
             - --db-username=keycloak
             - --db-password=StrongPassword123
+          env:
+            - name: KEYCLOAK_FRONTEND_URL
+              value: "https://talentlink-erfan.nl/auth/"
           envFrom:
             - secretRef:
-                name: keycloak-admin   # contains KEYCLOAK_ADMIN + KEYCLOAK_ADMIN_PASSWORD
+                name: keycloak-admin
           ports:
             - name: http
               containerPort: 8080
@@ -78,3 +81,19 @@ spec:
   resources:
     requests:
       storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: default
+  labels:
+    app: keycloak
+spec:
+  type: ClusterIP
+  selector:
+    app: keycloak
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
