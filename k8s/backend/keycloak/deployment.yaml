@@ -31,15 +31,15 @@ spec:
             - --db=postgres
             - --http-enabled=true
             - --http-port=8080
-            - --hostname-strict=false
-            - --hostname=talentlink-erfan.nl
             - --proxy-headers=xforwarded
+            - --hostname=keycloak.erfanalizada-github.ts.net
+            - --hostname-strict=true
             - --db-url=jdbc:postgresql://keycloak-db-postgresql:5432/keycloak
             - --db-username=keycloak
             - --db-password=StrongPassword123
           envFrom:
             - secretRef:
-                name: keycloak-admin
+                name: keycloak-admin   # contains KEYCLOAK_ADMIN + KEYCLOAK_ADMIN_PASSWORD
           ports:
             - name: http
               containerPort: 8080
@@ -48,15 +48,11 @@ spec:
               port: http
             initialDelaySeconds: 30
             periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 6
           livenessProbe:
             tcpSocket:
               port: http
             initialDelaySeconds: 60
             periodSeconds: 15
-            timeoutSeconds: 5
-            failureThreshold: 6
           volumeMounts:
             - name: keycloak-data
               mountPath: /opt/keycloak/data
@@ -78,8 +74,7 @@ metadata:
   name: keycloak-data
   namespace: default
 spec:
-  accessModes:
-    - ReadWriteOnce
+  accessModes: ["ReadWriteOnce"]
   resources:
     requests:
       storage: 1Gi

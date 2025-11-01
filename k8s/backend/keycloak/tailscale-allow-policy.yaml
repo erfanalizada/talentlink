@@ -1,0 +1,20 @@
+# tailscale-allow-policy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-tailscale-ingress
+  namespace: default
+spec:
+  # This selector applies the policy to ALL pods in the 'default' namespace (i.e., Keycloak)
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    # Selects all pods in the namespace labeled 'name: tailscale'
+    - namespaceSelector:
+        matchLabels:
+          name: tailscale
+    # The default rule in many CNI setups is to allow traffic from pods in the same namespace.
+    # We include this to prevent accidentally breaking *other* intra-default traffic.
+    - podSelector: {}

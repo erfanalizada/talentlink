@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keycloak-tailnet
+  namespace: default
+  annotations:
+    tailscale.com/hostname: keycloak
+    tailscale.com/tags: "tag:k8s-operator,tag:k8s"
+spec:
+  ingressClassName: tailscale
+  rules:
+    - host: keycloak  # 👈 must match tailscale.com/hostname
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak
+                port:
+                  name: http  # 👈 matches your service port name
