@@ -164,3 +164,5 @@ jobs:
         run: |
           kubectl rollout status deployment/keycloak -n default
           kubectl get pods -n default -o wide
+
+          
