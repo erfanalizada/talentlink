@@ -36,15 +36,20 @@ jobs:
         run: |
           docker buildx build \
             --platform linux/arm64 \
+            --provenance=false \
+            --sbom=false \
+            --pull \
+            --no-cache \
             -t ghcr.io/${{ github.actor }}/user-service:${{ github.sha }} \
             -t ghcr.io/${{ github.actor }}/user-service:latest \
-            --push \
-            ./backend/user-service
+            ./backend/user-service \
+            --push
 
-      # 6️⃣ Install and configure OCI + kubeconfig
+      # 6️⃣ Install OCI CLI
       - name: Install OCI CLI
         run: pip install --upgrade pip && pip install oci-cli
 
+      # 7️⃣ Configure OCI CLI
       - name: Configure OCI CLI
         run: |
           mkdir -p $HOME/.oci
@@ -52,13 +57,14 @@ jobs:
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
           chmod 600 $HOME/.oci/config $HOME/.oci/oci_api_key.pem
 
+      # 8️⃣ Configure kubeconfig
       - name: Configure kubeconfig
         run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
-      # 7️⃣ Deploy to Kubernetes
+      # 9️⃣ Deploy to Kubernetes
       - name: Deploy to Kubernetes
         run: |
           kubectl set image deployment/user-service user-service=ghcr.io/${{ github.actor }}/user-service:${{ github.sha }} -n default
