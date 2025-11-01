@@ -31,25 +31,27 @@ jobs:
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      # 5️⃣ Build & push ARM64 image
+      # 5️⃣ Build & Push user-service (ARM64)
       - name: Build & Push user-service (ARM64)
         run: |
           docker buildx build \
+            --builder default \
             --platform linux/arm64 \
-            --provenance=false \
-            --sbom=false \
+            --build-arg TARGETPLATFORM=linux/arm64 \
             --pull \
             --no-cache \
+            --provenance=false \
+            --sbom=false \
             -t ghcr.io/${{ github.actor }}/user-service:${{ github.sha }} \
             -t ghcr.io/${{ github.actor }}/user-service:latest \
             ./backend/user-service \
             --push
 
-      # 6️⃣ Install OCI CLI
+      # 6️⃣ Install and configure OCI CLI
       - name: Install OCI CLI
-        run: pip install --upgrade pip && pip install oci-cli
+        run: |
+          pip install --upgrade pip && pip install oci-cli
 
-      # 7️⃣ Configure OCI CLI
       - name: Configure OCI CLI
         run: |
           mkdir -p $HOME/.oci
@@ -57,16 +59,17 @@ jobs:
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
           chmod 600 $HOME/.oci/config $HOME/.oci/oci_api_key.pem
 
-      # 8️⃣ Configure kubeconfig
+      # 7️⃣ Configure kubeconfig
       - name: Configure kubeconfig
         run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
-      # 9️⃣ Deploy to Kubernetes
+      # 8️⃣ Deploy to Kubernetes
       - name: Deploy to Kubernetes
         run: |
+          echo "Updating user-service deployment to image ghcr.io/${{ github.actor }}/user-service:${{ github.sha }}"
           kubectl set image deployment/user-service user-service=ghcr.io/${{ github.actor }}/user-service:${{ github.sha }} -n default
           kubectl rollout status deployment/user-service -n default
           kubectl get pods -n default -o wide
