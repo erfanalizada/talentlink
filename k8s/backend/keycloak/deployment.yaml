@@ -31,7 +31,7 @@ spec:
             - --db=postgres
             - --http-enabled=true
             - --http-port=8080
-            - --proxy=edge                        # FIX redirect loop
+            - --proxy-headers=xforwarded         # ✅ Replaced deprecated --proxy=edge
             - --hostname=talentlink-erfan.nl
             - --hostname-strict=true
             - --db-url=jdbc:postgresql://keycloak-db-postgresql:5432/keycloak

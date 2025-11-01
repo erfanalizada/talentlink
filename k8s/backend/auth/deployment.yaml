@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: auth-service
+  namespace: default
   labels:
     app: auth-service
 spec:
@@ -14,35 +15,48 @@ spec:
       labels:
         app: auth-service
     spec:
-      imagePullSecrets:
-        - name: ghcr-secret
       containers:
         - name: auth-service
-          image: ghcr.io/erfanalizada/auth-service  # ✅ no tag, CI/CD will set SHA
-          imagePullPolicy: IfNotPresent             # ✅ better than Always
+          image: ghcr.io/<YOUR_GITHUB_USERNAME>/auth-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
+              name: http
+          envFrom:
+            - secretRef:
+                name: auth-db-secret
           readinessProbe:
             httpGet:
-              path: /api/auth/health
+              path: /api/auth/dbtest
               port: 5000
-            initialDelaySeconds: 5
+            initialDelaySeconds: 15
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /api/auth/health
+              path: /api/auth/dbtest
               port: 5000
-            initialDelaySeconds: 10
-            periodSeconds: 20
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: auth-service
+  namespace: default
+  labels:
+    app: auth-service
 spec:
-  type: ClusterIP
   selector:
     app: auth-service
   ports:
-    - port: 5000
+    - protocol: TCP
+      port: 5000
       targetPort: 5000
+  type: ClusterIP
