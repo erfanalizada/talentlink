@@ -6,9 +6,9 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/use-regex: "true"           # ✅ allow regex paths
-    nginx.ingress.kubernetes.io/rewrite-target: /$1          # ✅ fix Keycloak subpaths
-    nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"    # optional, helps with Keycloak headers
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
 spec:
   ingressClassName: nginx
   tls:
@@ -20,7 +20,7 @@ spec:
     - host: talentlink-erfan.nl
       http:
         paths:
-          # ---------------- FRONTEND ----------------
+          # FRONTEND
           - path: /
             pathType: Prefix
             backend:
@@ -29,7 +29,7 @@ spec:
                 port:
                   number: 80
 
-          # ---------------- BACKEND MICROSERVICES ----------------
+          # BACKEND MICROSERVICES
           - path: /api/auth
             pathType: Prefix
             backend:
@@ -37,7 +37,6 @@ spec:
                 name: auth-service
                 port:
                   number: 5000
-
           - path: /api/users
             pathType: Prefix
             backend:
@@ -45,7 +44,6 @@ spec:
                 name: user-service
                 port:
                   number: 5000
-
           - path: /api/jobs
             pathType: Prefix
             backend:
@@ -53,7 +51,6 @@ spec:
                 name: job-service
                 port:
                   number: 5000
-
           - path: /api/cv
             pathType: Prefix
             backend:
@@ -61,7 +58,6 @@ spec:
                 name: cv-service
                 port:
                   number: 5000
-
           - path: /api/matching
             pathType: Prefix
             backend:
@@ -69,7 +65,6 @@ spec:
                 name: matching-service
                 port:
                   number: 5000
-
           - path: /api/notifications
             pathType: Prefix
             backend:
@@ -77,3 +72,12 @@ spec:
                 name: notification-service
                 port:
                   number: 5000
+
+          # KEYCLOAK
+          - path: /auth(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: keycloak
+                port:
+                  number: 8080
