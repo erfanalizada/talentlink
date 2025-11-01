@@ -1,4 +1,4 @@
-name: CI/CD - user-service (ARM64)
+name: CI/CD - All Services (ARM64)
 
 on:
   push:
@@ -10,47 +10,49 @@ permissions:
   packages: write
 
 jobs:
-  build-and-deploy-user:
+  # 🧱 Shared Docker Buildx setup
+  buildx-setup:
     runs-on: ubuntu-latest
+    outputs:
+      builder-name: buildx
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          buildkitd-flags: --allow-insecure-entitlement network.host
+          install: true
+
+  # 🔁 Matrix Build & Deploy for backend services
+  build-and-deploy-backends:
+    runs-on: ubuntu-latest
+    needs: buildx-setup
+    strategy:
+      matrix:
+        service: [auth, user, job, cv, matching, notification]
 
     steps:
-      # 1️⃣ Checkout repository
       - uses: actions/checkout@v4
 
-      # 2️⃣ Enable QEMU for ARM emulation
-      - name: Set up QEMU
+      - name: Set up QEMU (ARM emulation)
         uses: docker/setup-qemu-action@v3
         with:
           platforms: all
 
-      # 3️⃣ Enable Docker Buildx (multi-platform builder)
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # 4️⃣ Log in to GitHub Container Registry
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      # 5️⃣ Build & Push user-service (ARM64)
-      - name: Build & Push user-service (ARM64)
+      - name: Build & Push ${{ matrix.service }}-service (ARM64)
         run: |
           docker buildx build \
-            --builder default \
             --platform linux/arm64 \
             --build-arg TARGETPLATFORM=linux/arm64 \
-            --pull \
-            --no-cache \
-            --provenance=false \
-            --sbom=false \
-            -t ghcr.io/${{ github.actor }}/user-service:${{ github.sha }} \
-            -t ghcr.io/${{ github.actor }}/user-service:latest \
-            ./backend/user-service \
+            -t ghcr.io/${{ github.actor }}/${{ matrix.service }}-service:${{ github.sha }} \
+            -t ghcr.io/${{ github.actor }}/${{ matrix.service }}-service:latest \
+            ./backend/${{ matrix.service }}-service \
             --push
 
-      # 6️⃣ Install and configure OCI CLI
       - name: Install OCI CLI
-        run: |
-          pip install --upgrade pip && pip install oci-cli
+        run: pip install --upgrade pip && pip install oci-cli
 
       - name: Configure OCI CLI
         run: |
@@ -59,17 +61,106 @@ jobs:
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
           chmod 600 $HOME/.oci/config $HOME/.oci/oci_api_key.pem
 
-      # 7️⃣ Configure kubeconfig
       - name: Configure kubeconfig
         run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
-      # 8️⃣ Deploy to Kubernetes
-      - name: Deploy to Kubernetes
+      - name: Deploy ${{ matrix.service }}-service to Kubernetes
         run: |
-          echo "Updating user-service deployment to image ghcr.io/${{ github.actor }}/user-service:${{ github.sha }}"
-          kubectl set image deployment/user-service user-service=ghcr.io/${{ github.actor }}/user-service:${{ github.sha }} -n default
-          kubectl rollout status deployment/user-service -n default
+          kubectl set image deployment/${{ matrix.service }}-service \
+            ${{ matrix.service }}-service=ghcr.io/${{ github.actor }}/${{ matrix.service }}-service:${{ github.sha }} -n default
+          kubectl rollout status deployment/${{ matrix.service }}-service -n default
+          kubectl get pods -n default -o wide
+
+  # 🖥️ Frontend Build & Deploy
+  build-and-deploy-frontend:
+    runs-on: ubuntu-latest
+    needs: buildx-setup
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build & Push frontend (ARM64)
+        run: |
+          docker buildx build \
+            --platform linux/arm64 \
+            --build-arg TARGETPLATFORM=linux/arm64 \
+            -t ghcr.io/${{ github.actor }}/talentlink-frontend:${{ github.sha }} \
+            -t ghcr.io/${{ github.actor }}/talentlink-frontend:latest \
+            ./frontend \
+            --push
+
+      - name: Install & configure OCI CLI
+        run: |
+          pip install --upgrade pip && pip install oci-cli
+          mkdir -p $HOME/.oci
+          echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
+          echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
+          chmod 600 $HOME/.oci/config $HOME/.oci/oci_api_key.pem
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Deploy frontend
+        run: |
+          kubectl set image deployment/frontend frontend=ghcr.io/${{ github.actor }}/talentlink-frontend:${{ github.sha }} -n default
+          kubectl rollout status deployment/frontend -n default
+          kubectl get pods -n default -o wide
+
+  # 🔐 Keycloak only deployment (no Docker build needed)
+  deploy-keycloak:
+    runs-on: ubuntu-latest
+    needs: buildx-setup
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install OCI CLI
+        run: pip install --upgrade pip && pip install oci-cli
+
+      - name: Configure OCI CLI
+        run: |
+          mkdir -p $HOME/.oci
+          echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
+          echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
+          chmod 600 $HOME/.oci/config $HOME/.oci/oci_api_key.pem
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Create/Update Keycloak admin secret
+        run: |
+          kubectl create secret generic keycloak-admin \
+            --namespace default \
+            --from-literal=KEYCLOAK_ADMIN='${{ secrets.KEYCLOAK_ADMIN }}' \
+            --from-literal=KEYCLOAK_ADMIN_PASSWORD='${{ secrets.KEYCLOAK_ADMIN_PASSWORD }}' \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Apply Keycloak Kubernetes manifests
+        run: |
+          kubectl apply -f k8s/backend/keycloak/deployment.yaml
+          kubectl apply -f k8s/backend/keycloak/service.yaml
+          kubectl apply -f k8s/backend/keycloak/ingress-tailscale.yaml
+          kubectl apply -f k8s/backend/keycloak/tailscale-allow-policy.yaml
+          kubectl apply -f k8s/backend/keycloak/keycloak-tailnet-fix.yaml
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/keycloak -n default
           kubectl get pods -n default -o wide
