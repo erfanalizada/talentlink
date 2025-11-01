@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -14,22 +15,37 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
   final AuthService _auth = AuthService();
 
-  Future<void> _login() async {
-    setState(() => _loading = true);
-    final success = await _auth.login(
-      _usernameController.text,
-      _passwordController.text,
-    );
-    setState(() => _loading = false);
+Future<void> _login() async {
+  setState(() => _loading = true);
+  final tokenData = await _auth.login(
+    _usernameController.text,
+    _passwordController.text,
+  );
+  setState(() => _loading = false);
 
-    if (success && mounted) {
-      Navigator.pushReplacementNamed(context, '/services');
+  if (tokenData != null && mounted) {
+    final token = tokenData['access_token'];
+    final decoded = JwtDecoder.decode(token);
+
+    // Extract roles from token (usually stored in realm_access)
+    final roles = decoded['realm_access']?['roles'] ?? [];
+    print("✅ Logged in! Roles: $roles");
+
+    // Optionally, redirect based on role
+    if (roles.contains('employer')) {
+      Navigator.pushReplacementNamed(context, '/employerDashboard');
+    } else if (roles.contains('employee')) {
+      Navigator.pushReplacementNamed(context, '/employeeDashboard');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login failed')),
-      );
+      Navigator.pushReplacementNamed(context, '/services');
     }
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Login failed')),
+    );
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
