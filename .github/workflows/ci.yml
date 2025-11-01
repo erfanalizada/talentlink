@@ -1,4 +1,4 @@
-name: CI/CD - user-service only
+name: CI/CD - user-service (ARM64)
 
 on:
   push:
@@ -10,51 +10,38 @@ permissions:
   packages: write
 
 jobs:
-  # ---------------------------------------------------------
-  # Buildx + QEMU Setup
-  # ---------------------------------------------------------
-  buildx-setup:
+  build-and-deploy-user:
     runs-on: ubuntu-latest
-    outputs:
-      buildx-cache-key: ${{ steps.set-cache-key.outputs.key }}
+
     steps:
-      - name: Set up QEMU for multi-arch builds
+      # 1️⃣ Checkout repository
+      - uses: actions/checkout@v4
+
+      # 2️⃣ Enable QEMU for ARM emulation
+      - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
           platforms: all
 
-      - name: Set up Docker Buildx (container driver)
+      # 3️⃣ Enable Docker Buildx (multi-platform builder)
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            network=host
 
-      - id: set-cache-key
-        run: echo "key=$(date +%s)" >> "$GITHUB_OUTPUT"
-
-  # ---------------------------------------------------------
-  # USER SERVICE
-  # ---------------------------------------------------------
-  build-and-deploy-user:
-    runs-on: ubuntu-latest
-    needs: buildx-setup
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Log in to GitHub Container Registry
+      # 4️⃣ Log in to GitHub Container Registry
+      - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Build & push user-service (ARM64)
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend/user-service
-          file: ./backend/user-service/Dockerfile
-          push: true
-          platforms: linux/arm64
-          tags: |
-            ghcr.io/${{ github.actor }}/user-service:${{ github.sha }}
-            ghcr.io/${{ github.actor }}/user-service:latest
+      # 5️⃣ Build & push ARM64 image
+      - name: Build & Push user-service (ARM64)
+        run: |
+          docker buildx build \
+            --platform linux/arm64 \
+            -t ghcr.io/${{ github.actor }}/user-service:${{ github.sha }} \
+            -t ghcr.io/${{ github.actor }}/user-service:latest \
+            --push \
+            ./backend/user-service
 
+      # 6️⃣ Install and configure OCI + kubeconfig
       - name: Install OCI CLI
         run: pip install --upgrade pip && pip install oci-cli
 
@@ -63,8 +50,7 @@ jobs:
           mkdir -p $HOME/.oci
           echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
-          chmod 600 $HOME/.oci/config
-          chmod 600 $HOME/.oci/oci_api_key.pem
+          chmod 600 $HOME/.oci/config $HOME/.oci/oci_api_key.pem
 
       - name: Configure kubeconfig
         run: |
@@ -72,7 +58,8 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
-      - name: Deploy user-service to cluster
+      # 7️⃣ Deploy to Kubernetes
+      - name: Deploy to Kubernetes
         run: |
           kubectl set image deployment/user-service user-service=ghcr.io/${{ github.actor }}/user-service:${{ github.sha }} -n default
           kubectl rollout status deployment/user-service -n default
