@@ -10,21 +10,37 @@ permissions:
   packages: write # Needed for pushing images to GHCR
 
 jobs:
+  # Common build template for all services
+  buildx-setup:
+    runs-on: ubuntu-latest
+    outputs:
+      buildx-cache-key: ${{ steps.set-cache-key.outputs.key }}
+    steps:
+      - name: Setup Docker Buildx
+        run: |
+          docker buildx create --use
+          docker buildx inspect --bootstrap
+      - id: set-cache-key
+        run: echo "key=$(date +%s)" >> "$GITHUB_OUTPUT"
+
   # ---------------- AUTH SERVICE ----------------
   build-and-deploy-auth:
     runs-on: ubuntu-latest
+    needs: buildx-setup
     steps:
       - uses: actions/checkout@v4
 
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Build & push auth-service
+      - name: Build & push auth-service (ARM64)
         run: |
-          docker build -t ghcr.io/${{ github.actor }}/auth-service:${{ github.sha }} ./backend/auth-service
-          docker push ghcr.io/${{ github.actor }}/auth-service:${{ github.sha }}
-          docker tag ghcr.io/${{ github.actor }}/auth-service:${{ github.sha }} ghcr.io/${{ github.actor }}/auth-service:latest
-          docker push ghcr.io/${{ github.actor }}/auth-service:latest
+          docker buildx build \
+            --platform linux/arm64 \
+            -t ghcr.io/${{ github.actor }}/auth-service:${{ github.sha }} \
+            -t ghcr.io/${{ github.actor }}/auth-service:latest \
+            ./backend/auth-service \
+            --push
 
       - name: Install OCI CLI
         run: pip install --upgrade pip && pip install oci-cli
@@ -34,6 +50,7 @@ jobs:
           mkdir -p $HOME/.oci
           echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
+          chmod 600 $HOME/.oci/config
           chmod 600 $HOME/.oci/oci_api_key.pem
 
       - name: Configure kubeconfig
@@ -51,21 +68,25 @@ jobs:
   # ---------------- USER SERVICE ----------------
   build-and-deploy-user:
     runs-on: ubuntu-latest
+    needs: buildx-setup
     steps:
       - uses: actions/checkout@v4
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-      - name: Build & push user-service
+      - name: Build & push user-service (ARM64)
         run: |
-          docker build -t ghcr.io/${{ github.actor }}/user-service:${{ github.sha }} ./backend/user-service
-          docker push ghcr.io/${{ github.actor }}/user-service:${{ github.sha }}
-          docker tag ghcr.io/${{ github.actor }}/user-service:${{ github.sha }} ghcr.io/${{ github.actor }}/user-service:latest
-          docker push ghcr.io/${{ github.actor }}/user-service:latest
+          docker buildx build \
+            --platform linux/arm64 \
+            -t ghcr.io/${{ github.actor }}/user-service:${{ github.sha }} \
+            -t ghcr.io/${{ github.actor }}/user-service:latest \
+            ./backend/user-service \
+            --push
       - run: pip install --upgrade pip && pip install oci-cli
       - run: |
           mkdir -p $HOME/.oci
           echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
+          chmod 600 $HOME/.oci/config
           chmod 600 $HOME/.oci/oci_api_key.pem
       - run: |
           mkdir -p $HOME/.kube
@@ -79,21 +100,25 @@ jobs:
   # ---------------- JOB SERVICE ----------------
   build-and-deploy-job:
     runs-on: ubuntu-latest
+    needs: buildx-setup
     steps:
       - uses: actions/checkout@v4
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-      - name: Build & push job-service
+      - name: Build & push job-service (ARM64)
         run: |
-          docker build -t ghcr.io/${{ github.actor }}/job-service:${{ github.sha }} ./backend/job-service
-          docker push ghcr.io/${{ github.actor }}/job-service:${{ github.sha }}
-          docker tag ghcr.io/${{ github.actor }}/job-service:${{ github.sha }} ghcr.io/${{ github.actor }}/job-service:latest
-          docker push ghcr.io/${{ github.actor }}/job-service:latest
+          docker buildx build \
+            --platform linux/arm64 \
+            -t ghcr.io/${{ github.actor }}/job-service:${{ github.sha }} \
+            -t ghcr.io/${{ github.actor }}/job-service:latest \
+            ./backend/job-service \
+            --push
       - run: pip install --upgrade pip && pip install oci-cli
       - run: |
           mkdir -p $HOME/.oci
           echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
+          chmod 600 $HOME/.oci/config
           chmod 600 $HOME/.oci/oci_api_key.pem
       - run: |
           mkdir -p $HOME/.kube
@@ -107,21 +132,25 @@ jobs:
   # ---------------- CV SERVICE ----------------
   build-and-deploy-cv:
     runs-on: ubuntu-latest
+    needs: buildx-setup
     steps:
       - uses: actions/checkout@v4
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-      - name: Build & push cv-service
+      - name: Build & push cv-service (ARM64)
         run: |
-          docker build -t ghcr.io/${{ github.actor }}/cv-service:${{ github.sha }} ./backend/cv-service
-          docker push ghcr.io/${{ github.actor }}/cv-service:${{ github.sha }}
-          docker tag ghcr.io/${{ github.actor }}/cv-service:${{ github.sha }} ghcr.io/${{ github.actor }}/cv-service:latest
-          docker push ghcr.io/${{ github.actor }}/cv-service:latest
+          docker buildx build \
+            --platform linux/arm64 \
+            -t ghcr.io/${{ github.actor }}/cv-service:${{ github.sha }} \
+            -t ghcr.io/${{ github.actor }}/cv-service:latest \
+            ./backend/cv-service \
+            --push
       - run: pip install --upgrade pip && pip install oci-cli
       - run: |
           mkdir -p $HOME/.oci
           echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
+          chmod 600 $HOME/.oci/config
           chmod 600 $HOME/.oci/oci_api_key.pem
       - run: |
           mkdir -p $HOME/.kube
@@ -135,21 +164,25 @@ jobs:
   # ---------------- MATCHING SERVICE ----------------
   build-and-deploy-matching:
     runs-on: ubuntu-latest
+    needs: buildx-setup
     steps:
       - uses: actions/checkout@v4
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-      - name: Build & push matching-service
+      - name: Build & push matching-service (ARM64)
         run: |
-          docker build -t ghcr.io/${{ github.actor }}/matching-service:${{ github.sha }} ./backend/matching-service
-          docker push ghcr.io/${{ github.actor }}/matching-service:${{ github.sha }}
-          docker tag ghcr.io/${{ github.actor }}/matching-service:${{ github.sha }} ghcr.io/${{ github.actor }}/matching-service:latest
-          docker push ghcr.io/${{ github.actor }}/matching-service:latest
+          docker buildx build \
+            --platform linux/arm64 \
+            -t ghcr.io/${{ github.actor }}/matching-service:${{ github.sha }} \
+            -t ghcr.io/${{ github.actor }}/matching-service:latest \
+            ./backend/matching-service \
+            --push
       - run: pip install --upgrade pip && pip install oci-cli
       - run: |
           mkdir -p $HOME/.oci
           echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
+          chmod 600 $HOME/.oci/config
           chmod 600 $HOME/.oci/oci_api_key.pem
       - run: |
           mkdir -p $HOME/.kube
@@ -163,21 +196,25 @@ jobs:
   # ---------------- NOTIFICATION SERVICE ----------------
   build-and-deploy-notification:
     runs-on: ubuntu-latest
+    needs: buildx-setup
     steps:
       - uses: actions/checkout@v4
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-      - name: Build & push notification-service
+      - name: Build & push notification-service (ARM64)
         run: |
-          docker build -t ghcr.io/${{ github.actor }}/notification-service:${{ github.sha }} ./backend/notification-service
-          docker push ghcr.io/${{ github.actor }}/notification-service:${{ github.sha }}
-          docker tag ghcr.io/${{ github.actor }}/notification-service:${{ github.sha }} ghcr.io/${{ github.actor }}/notification-service:latest
-          docker push ghcr.io/${{ github.actor }}/notification-service:latest
+          docker buildx build \
+            --platform linux/arm64 \
+            -t ghcr.io/${{ github.actor }}/notification-service:${{ github.sha }} \
+            -t ghcr.io/${{ github.actor }}/notification-service:latest \
+            ./backend/notification-service \
+            --push
       - run: pip install --upgrade pip && pip install oci-cli
       - run: |
           mkdir -p $HOME/.oci
           echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
+          chmod 600 $HOME/.oci/config
           chmod 600 $HOME/.oci/oci_api_key.pem
       - run: |
           mkdir -p $HOME/.kube
@@ -191,21 +228,25 @@ jobs:
   # ---------------- FRONTEND ----------------
   build-and-deploy-frontend:
     runs-on: ubuntu-latest
+    needs: buildx-setup
     steps:
       - uses: actions/checkout@v4
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-      - name: Build & push frontend
+      - name: Build & push frontend (ARM64)
         run: |
-          docker build -t ghcr.io/${{ github.actor }}/talentlink-frontend:${{ github.sha }} ./frontend
-          docker push ghcr.io/${{ github.actor }}/talentlink-frontend:${{ github.sha }}
-          docker tag ghcr.io/${{ github.actor }}/talentlink-frontend:${{ github.sha }} ghcr.io/${{ github.actor }}/talentlink-frontend:latest
-          docker push ghcr.io/${{ github.actor }}/talentlink-frontend:latest
+          docker buildx build \
+            --platform linux/arm64 \
+            -t ghcr.io/${{ github.actor }}/talentlink-frontend:${{ github.sha }} \
+            -t ghcr.io/${{ github.actor }}/talentlink-frontend:latest \
+            ./frontend \
+            --push
       - run: pip install --upgrade pip && pip install oci-cli
       - run: |
           mkdir -p $HOME/.oci
           echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
+          chmod 600 $HOME/.oci/config
           chmod 600 $HOME/.oci/oci_api_key.pem
       - run: |
           mkdir -p $HOME/.kube
@@ -219,6 +260,7 @@ jobs:
   # ---------------- KEYCLOAK ----------------
   deploy-keycloak:
     runs-on: ubuntu-latest
+    needs: buildx-setup
     steps:
       - uses: actions/checkout@v4
 
@@ -230,6 +272,7 @@ jobs:
           mkdir -p $HOME/.oci
           echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
+          chmod 600 $HOME/.oci/config
           chmod 600 $HOME/.oci/oci_api_key.pem
 
       - name: Configure kubeconfig
@@ -256,5 +299,3 @@ jobs:
         run: |
           kubectl rollout status deployment/keycloak -n default
           kubectl get pods -n default -o wide
-
-          
