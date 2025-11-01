@@ -1,169 +1,152 @@
 import os
-import requests
 import psycopg2
-from flask import Flask, request, jsonify
+import requests
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from dotenv import load_dotenv
 
-# Load environment variables (optional in container, but safe)
+# Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)  # allow Flutter web frontend requests
+CORS(app)  # allow frontend requests
 
-# === Database (Keycloak PostgreSQL) config ===
+# --- Database Config ---
 DB_HOST = os.getenv("DB_HOST")
 DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME")
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 
-# === Keycloak config ===
+# --- Keycloak Config ---
 KEYCLOAK_URL = os.getenv("KEYCLOAK_URL", "https://talentlink-erfan.nl/auth")
 KEYCLOAK_REALM = os.getenv("KEYCLOAK_REALM", "talentlink")
-KEYCLOAK_ADMIN = os.getenv("KEYCLOAK_ADMIN", "admin")
-KEYCLOAK_ADMIN_PASSWORD = os.getenv("KEYCLOAK_ADMIN_PASSWORD", "admin123")
+KEYCLOAK_ADMIN_USER = os.getenv("KEYCLOAK_ADMIN_USER", "auth-service-admin")
+KEYCLOAK_ADMIN_PASSWORD = os.getenv("KEYCLOAK_ADMIN_PASSWORD", "StrongPassword123!")
+KEYCLOAK_CLIENT_ID = "admin-cli"
 
-# === Derived URLs ===
-TOKEN_URL = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
-ADMIN_BASE_URL = f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}"
 
-# ---------------------------------------------------------------------
-# HEALTHCHECK / DB TEST
-# ---------------------------------------------------------------------
+# --- Helper: Get admin access token ---
+def get_admin_token():
+    token_url = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
+    data = {
+        "grant_type": "password",
+        "client_id": KEYCLOAK_CLIENT_ID,
+        "username": KEYCLOAK_ADMIN_USER,
+        "password": KEYCLOAK_ADMIN_PASSWORD,
+    }
+
+    response = requests.post(token_url, data=data)
+    if response.status_code != 200:
+        print("❌ Failed to get admin token:", response.text)
+        raise Exception("Failed to authenticate admin")
+
+    token = response.json()["access_token"]
+    return token
+
+
+# --- Health check endpoint ---
 @app.route("/api/auth/dbtest")
 def db_test():
-    """Simple PostgreSQL test to verify DB connectivity"""
     try:
-        conn = psycopg2.connect(
+        with psycopg2.connect(
             host=DB_HOST,
             port=DB_PORT,
             dbname=DB_NAME,
             user=DB_USER,
-            password=DB_PASSWORD,
+            password=DB_PASSWORD
+        ) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 'DB connection OK' AS message;")
+                result = cur.fetchone()
+                return jsonify({"db": result[0]}), 200
+    except Exception as e:
+        print("❌ DB connection failed:", e)
+        return jsonify({"error": str(e)}), 500
+
+
+# --- Register endpoint ---
+@app.route("/api/auth/register", methods=["POST"])
+def register_user():
+    data = request.json
+    username = data.get("username")
+    email = data.get("email")
+    password = data.get("password")
+    role = data.get("role", "employee")  # default role
+
+    try:
+        admin_token = get_admin_token()
+        headers = {"Authorization": f"Bearer {admin_token}", "Content-Type": "application/json"}
+
+        # 1️⃣ Create the user
+        user_payload = {
+            "username": username,
+            "email": email,
+            "enabled": True,
+            "emailVerified": True,
+            "credentials": [{"type": "password", "value": password, "temporary": False}],
+        }
+
+        create_user_url = f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}/users"
+        create_resp = requests.post(create_user_url, json=user_payload, headers=headers)
+
+        if create_resp.status_code not in [201, 409]:
+            return jsonify({
+                "error": "Failed to create user",
+                "details": create_resp.text
+            }), 500
+
+        # 2️⃣ Get the user ID
+        user_search_url = f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}/users"
+        user_id_resp = requests.get(
+            user_search_url, params={"username": username}, headers=headers
         )
-        cur = conn.cursor()
-        cur.execute("SELECT 'DB connection OK' AS message;")
-        result = cur.fetchone()
-        cur.close()
-        conn.close()
-        print("✅ PostgreSQL connection success:", result[0])
-        return jsonify({"db": result[0]}), 200
+        user_id = user_id_resp.json()[0]["id"]
+
+        # 3️⃣ Assign role (realm-level)
+        role_url = f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}/roles/{role}"
+        role_resp = requests.get(role_url, headers=headers)
+
+        if role_resp.status_code == 200:
+            role_info = role_resp.json()
+            assign_url = f"{KEYCLOAK_URL}/admin/realms/{KEYCLOAK_REALM}/users/{user_id}/role-mappings/realm"
+            requests.post(assign_url, json=[role_info], headers=headers)
+        else:
+            print(f"⚠️ Role '{role}' not found, skipping role assignment")
+
+        print(f"✅ User '{username}' created successfully with role '{role}'")
+        return jsonify({"message": "User registered successfully"}), 201
+
     except Exception as e:
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
-# ---------------------------------------------------------------------
-# REGISTER (Create user in Keycloak)
-# ---------------------------------------------------------------------
-@app.route("/api/auth/register", methods=["POST"])
-def register():
-    data = request.get_json()
-    username = data.get("username")
-    email = data.get("email")
-    password = data.get("password")
-    role = data.get("role", "employee")  # default role
-
-    if not username or not email or not password:
-        return jsonify({"error": "Missing required fields"}), 400
-
-    # Step 1: get admin token
-    token_payload = {
-        "client_id": "admin-cli",
-        "grant_type": "password",
-        "username": KEYCLOAK_ADMIN,
-        "password": KEYCLOAK_ADMIN_PASSWORD,
-    }
-    token_resp = requests.post(TOKEN_URL, data=token_payload)
-    if token_resp.status_code != 200:
-        return jsonify({"error": "Failed to authenticate admin", "details": token_resp.text}), 500
-    admin_token = token_resp.json()["access_token"]
-
-    # Step 2: create user
-    user_data = {
-        "username": username,
-        "email": email,
-        "enabled": True,
-        "credentials": [{"type": "password", "value": password, "temporary": False}],
-    }
-
-    create_user_resp = requests.post(
-        f"{ADMIN_BASE_URL}/users",
-        headers={"Authorization": f"Bearer {admin_token}", "Content-Type": "application/json"},
-        json=user_data,
-    )
-
-    if create_user_resp.status_code not in [201, 409]:  # 409 if user already exists
-        return jsonify({"error": "Failed to create user", "details": create_user_resp.text}), 500
-
-    # Step 3: fetch user ID (needed to assign role)
-    users_resp = requests.get(
-        f"{ADMIN_BASE_URL}/users",
-        headers={"Authorization": f"Bearer {admin_token}"},
-        params={"username": username},
-    )
-    user_list = users_resp.json()
-    if not user_list:
-        return jsonify({"error": "User created but not found"}), 500
-    user_id = user_list[0]["id"]
-
-    # Step 4: get role details
-    roles_resp = requests.get(
-        f"{ADMIN_BASE_URL}/roles",
-        headers={"Authorization": f"Bearer {admin_token}"},
-    )
-    roles = roles_resp.json()
-    target_role = next((r for r in roles if r["name"] == role), None)
-    if not target_role:
-        return jsonify({"error": f"Role '{role}' not found in Keycloak"}), 400
-
-    # Step 5: assign role to user
-    assign_resp = requests.post(
-        f"{ADMIN_BASE_URL}/users/{user_id}/role-mappings/realm",
-        headers={"Authorization": f"Bearer {admin_token}", "Content-Type": "application/json"},
-        json=[{"id": target_role["id"], "name": target_role["name"]}],
-    )
-    if assign_resp.status_code not in [204, 200]:
-        return jsonify({"error": "Failed to assign role", "details": assign_resp.text}), 500
-
-    return jsonify({"message": "User registered successfully"}), 201
-
-
-# ---------------------------------------------------------------------
-# LOGIN (Get token from Keycloak)
-# ---------------------------------------------------------------------
+# --- Login endpoint ---
 @app.route("/api/auth/login", methods=["POST"])
-def login():
-    data = request.get_json()
+def login_user():
+    data = request.json
     username = data.get("username")
     password = data.get("password")
 
-    if not username or not password:
-        return jsonify({"error": "Missing credentials"}), 400
-
-    payload = {
-        "client_id": "frontend-client",
+    token_url = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
+    login_data = {
         "grant_type": "password",
+        "client_id": "frontend-client",  # the Keycloak client your frontend uses
         "username": username,
         "password": password,
     }
 
-    resp = requests.post(TOKEN_URL, data=payload)
+    resp = requests.post(token_url, data=login_data)
+
     if resp.status_code == 200:
-        token_data = resp.json()
-        return jsonify({
-            "access_token": token_data["access_token"],
-            "refresh_token": token_data.get("refresh_token"),
-            "expires_in": token_data["expires_in"],
-        }), 200
+        print(f"✅ Login success for {username}")
+        return jsonify(resp.json()), 200
     else:
+        print(f"❌ Login failed for {username}: {resp.text}")
         return jsonify({"error": "Invalid credentials", "details": resp.text}), 401
 
 
-# ---------------------------------------------------------------------
-# MAIN ENTRY POINT
-# ---------------------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

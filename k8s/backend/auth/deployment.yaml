@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: auth-service
-          image: ghcr.io/<YOUR_GITHUB_USERNAME>/auth-service:latest
+          image: ghcr.io/erfanalizada/auth-service:latest   # ✅ your actual image
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
@@ -26,15 +26,17 @@ spec:
           # --- Environment variables ---
           envFrom:
             - secretRef:
-                name: auth-db-secret       # DB connection secret
+                name: auth-db-secret         # Database connection info
             - secretRef:
-                name: keycloak-admin        # Keycloak admin creds
+                name: keycloak-admin-secret  # Keycloak admin credentials
 
           env:
             - name: KEYCLOAK_URL
               value: "https://talentlink-erfan.nl/auth"
             - name: KEYCLOAK_REALM
               value: "talentlink"
+            - name: KEYCLOAK_MASTER_REALM
+              value: "master"
             - name: FLASK_ENV
               value: "production"
 
