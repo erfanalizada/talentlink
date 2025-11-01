@@ -1,22 +1,20 @@
-# Use platform-aware base image for ARM64 safety
-FROM --platform=$BUILDPLATFORM python:3.11-slim
+# Use platform-aware base image for ARM64
+FROM --platform=$TARGETPLATFORM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
 
-# Copy only dependencies first (better build caching)
+# Copy dependencies first (better caching)
 COPY requirements.txt .
 
-# Install Python dependencies efficiently
-# - No need for GCC unless you compile C extensions
-# - Clean cache to keep the image small
+# Install dependencies (no gcc needed unless C extensions)
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application source code
+# Copy app source
 COPY . .
 
 # Expose Flask port
 EXPOSE 5000
 
-# Run Flask app
+# Start Flask app
 CMD ["python", "app.py"]
