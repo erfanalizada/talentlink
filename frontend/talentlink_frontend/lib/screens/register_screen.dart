@@ -12,6 +12,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  String _selectedRole = 'employee';
   bool _loading = false;
   final AuthService _auth = AuthService();
 
@@ -21,7 +22,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _usernameController.text,
       _emailController.text,
       _passwordController.text,
-      'user',
+      _selectedRole,
     );
     setState(() => _loading = false);
 
@@ -46,9 +47,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
             TextField(controller: _emailController, decoration: const InputDecoration(labelText: 'Email')),
             TextField(controller: _passwordController, decoration: const InputDecoration(labelText: 'Password'), obscureText: true),
             const SizedBox(height: 20),
+            DropdownButtonFormField<String>(
+              value: _selectedRole,
+              items: const [
+                DropdownMenuItem(value: 'employee', child: Text('Employee')),
+                DropdownMenuItem(value: 'employer', child: Text('Employer')),
+              ],
+              onChanged: (val) => setState(() => _selectedRole = val!),
+              decoration: const InputDecoration(labelText: 'Role'),
+            ),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _loading ? null : _register,
-              child: _loading ? const CircularProgressIndicator() : const Text('Register'),
+              child: _loading
+                  ? const CircularProgressIndicator()
+                  : const Text('Register'),
             ),
           ],
         ),

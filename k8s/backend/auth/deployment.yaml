@@ -22,21 +22,38 @@ spec:
           ports:
             - containerPort: 5000
               name: http
+
+          # --- Environment variables ---
           envFrom:
             - secretRef:
-                name: auth-db-secret
+                name: auth-db-secret       # DB connection secret
+            - secretRef:
+                name: keycloak-admin        # Keycloak admin creds
+
+          env:
+            - name: KEYCLOAK_URL
+              value: "https://talentlink-erfan.nl/auth"
+            - name: KEYCLOAK_REALM
+              value: "talentlink"
+            - name: FLASK_ENV
+              value: "production"
+
+          # --- Health checks ---
           readinessProbe:
             httpGet:
               path: /api/auth/dbtest
               port: 5000
             initialDelaySeconds: 15
             periodSeconds: 10
+
           livenessProbe:
             httpGet:
               path: /api/auth/dbtest
               port: 5000
             initialDelaySeconds: 30
             periodSeconds: 15
+
+          # --- Resource limits ---
           resources:
             requests:
               cpu: "250m"
@@ -44,6 +61,7 @@ spec:
             limits:
               cpu: "500m"
               memory: "512Mi"
+
 ---
 apiVersion: v1
 kind: Service
