@@ -10,18 +10,21 @@ permissions:
   packages: write
 
 jobs:
-  # 🧱 Shared Docker Buildx setup
+  # 🧱 Shared Docker Buildx + QEMU setup
   buildx-setup:
     runs-on: ubuntu-latest
-    outputs:
-      buildx-cache-key: ${{ steps.set-cache-key.outputs.key }}
     steps:
-      - name: Setup Docker Buildx
-        run: |
-          docker buildx create --use
-          docker buildx inspect --bootstrap
-      - id: set-cache-key
-        run: echo "key=$(date +%s)" >> "$GITHUB_OUTPUT"
+      - name: Set up QEMU (for ARM builds)
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          buildkitd-flags: --allow-insecure-entitlement network.host
+          install: true
+          driver: docker-container
 
   # ---------------- AUTH SERVICE ----------------
   build-and-deploy-auth:
@@ -37,6 +40,7 @@ jobs:
         run: |
           docker buildx build \
             --platform linux/arm64 \
+            --build-arg TARGETPLATFORM=linux/arm64 \
             -t ghcr.io/${{ github.actor }}/auth-service:${{ github.sha }} \
             -t ghcr.io/${{ github.actor }}/auth-service:latest \
             ./backend/auth-service \
@@ -70,35 +74,30 @@ jobs:
     needs: buildx-setup
     steps:
       - uses: actions/checkout@v4
-
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-
       - name: Build & push user-service (ARM64)
         run: |
           docker buildx build \
             --platform linux/arm64 \
+            --build-arg TARGETPLATFORM=linux/arm64 \
             -t ghcr.io/${{ github.actor }}/user-service:${{ github.sha }} \
             -t ghcr.io/${{ github.actor }}/user-service:latest \
             ./backend/user-service \
             --push
-
       - name: Install OCI CLI
         run: pip install --upgrade pip && pip install oci-cli
-
       - name: Configure OCI CLI
         run: |
           mkdir -p $HOME/.oci
           echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
           chmod 600 $HOME/.oci/config $HOME/.oci/oci_api_key.pem
-
       - name: Configure kubeconfig
         run: |
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
-
       - name: Deploy user-service
         run: |
           kubectl set image deployment/user-service user-service=ghcr.io/${{ github.actor }}/user-service:${{ github.sha }}
@@ -117,6 +116,7 @@ jobs:
         run: |
           docker buildx build \
             --platform linux/arm64 \
+            --build-arg TARGETPLATFORM=linux/arm64 \
             -t ghcr.io/${{ github.actor }}/job-service:${{ github.sha }} \
             -t ghcr.io/${{ github.actor }}/job-service:latest \
             ./backend/job-service \
@@ -140,6 +140,7 @@ jobs:
           kubectl rollout status deployment/job-service
           kubectl get pods -o wide
 
+  
   # ---------------- NOTIFICATION SERVICE ----------------
   build-and-deploy-notification:
     runs-on: ubuntu-latest
@@ -152,6 +153,7 @@ jobs:
         run: |
           docker buildx build \
             --platform linux/arm64 \
+            --build-arg TARGETPLATFORM=linux/arm64 \
             -t ghcr.io/${{ github.actor }}/notification-service:${{ github.sha }} \
             -t ghcr.io/${{ github.actor }}/notification-service:latest \
             ./backend/notification-service \
@@ -187,6 +189,7 @@ jobs:
         run: |
           docker buildx build \
             --platform linux/arm64 \
+            --build-arg TARGETPLATFORM=linux/arm64 \
             -t ghcr.io/${{ github.actor }}/talentlink-frontend:${{ github.sha }} \
             -t ghcr.io/${{ github.actor }}/talentlink-frontend:latest \
             ./frontend \
