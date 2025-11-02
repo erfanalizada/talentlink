@@ -15,7 +15,11 @@ class TalentLinkApp extends StatelessWidget {
     return MaterialApp(
       title: 'TalentLink',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.blue),
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.indigo,
+        scaffoldBackgroundColor: Colors.grey[50],
+      ),
       initialRoute: '/login',
       routes: {
         '/login': (context) => const LoginScreen(),
