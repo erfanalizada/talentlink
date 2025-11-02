@@ -1,22 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: MyHomePage(),
-    );
-  }
-}
-
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
 
@@ -26,29 +10,43 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
-
-  final List<Widget> _pages = const [
-    ApiTestPage(title: "Hello Service", url: "/api/hello"),
-    ApiTestPage(title: "Auth Service", url: "/api/auth/health"),
-    ApiTestPage(title: "User Service", url: "/api/users/health"),
-    ApiTestPage(title: "Job Service", url: "/api/jobs/health"),
-    ApiTestPage(title: "CV Service", url: "/api/cv/health"),
-    ApiTestPage(title: "Matching Service", url: "/api/matching/health"),
-    ApiTestPage(title: "Notification Service", url: "/api/notifications/health"),
+  final List<Map<String, String>> _services = [
+    {"title": "Hello Service", "url": "/api/hello"},
+    {"title": "Auth Service", "url": "/api/auth/health"},
+    {"title": "User Service", "url": "/api/users/health"},
+    {"title": "Job Service", "url": "/api/jobs/health"},
+    {"title": "CV Service", "url": "/api/cv/health"},
+    {"title": "Matching Service", "url": "/api/matching/health"},
+    {"title": "Notification Service", "url": "/api/notifications/health"},
   ];
 
-  void _onItemTapped(int index) {
-    setState(() => _selectedIndex = index);
+  void _logout() {
+    Navigator.pushReplacementNamed(context, '/login');
   }
 
   @override
   Widget build(BuildContext context) {
+    final currentService = _services[_selectedIndex];
     return Scaffold(
-      body: _pages[_selectedIndex],
+      appBar: AppBar(
+        title: Text(currentService['title']!),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.red),
+            tooltip: "Logout",
+            onPressed: _logout,
+          )
+        ],
+      ),
+      body: ApiTestPage(
+        title: currentService['title']!,
+        url: currentService['url']!,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+        onTap: (index) => setState(() => _selectedIndex = index),
         type: BottomNavigationBarType.fixed,
+        selectedItemColor: Colors.indigo,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.waving_hand), label: "Hello"),
           BottomNavigationBarItem(icon: Icon(Icons.lock), label: "Auth"),
@@ -63,11 +61,9 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-/// A reusable widget to call any service endpoint
 class ApiTestPage extends StatefulWidget {
   final String title;
   final String url;
-
   const ApiTestPage({super.key, required this.title, required this.url});
 
   @override
@@ -75,34 +71,39 @@ class ApiTestPage extends StatefulWidget {
 }
 
 class _ApiTestPageState extends State<ApiTestPage> {
-  String _response = "No response yet";
+  String _response = "Press the button to test this service.";
 
   Future<void> _callApi() async {
     try {
       final res = await http.get(Uri.parse(widget.url));
-      if (res.statusCode == 200) {
-        setState(() => _response = res.body);
-      } else {
-        setState(() => _response = "Error: ${res.statusCode}");
-      }
+      setState(() => _response = res.statusCode == 200
+          ? res.body
+          : "Error: ${res.statusCode}\n${res.body}");
     } catch (e) {
-      setState(() => _response = "Failed: $e");
+      setState(() => _response = "Failed to connect: $e");
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
-      body: Center(
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(_response, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 20),
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: _callApi,
-              child: Text("Call ${widget.title}"),
+              icon: const Icon(Icons.api),
+              label: Text("Test ${widget.title}"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.indigo,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
             ),
           ],
         ),

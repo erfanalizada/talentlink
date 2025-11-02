@@ -31,12 +31,21 @@ spec:
                 name: keycloak-admin-secret  # Keycloak admin credentials
 
           env:
+            # --- Keycloak setup ---
             - name: KEYCLOAK_URL
               value: "https://talentlink-erfan.nl/auth"
             - name: KEYCLOAK_REALM
               value: "talentlink"
-            - name: KEYCLOAK_MASTER_REALM
-              value: "master"
+
+            # The client your backend uses for admin access
+            - name: KEYCLOAK_ADMIN_CLIENT_ID
+              value: "auth-service"
+
+            # The client your Flutter frontend uses for login
+            - name: KEYCLOAK_LOGIN_CLIENT_ID
+              value: "frontend-client"
+
+            # Optional: Flask runtime
             - name: FLASK_ENV
               value: "production"
 
@@ -64,19 +73,3 @@ spec:
               cpu: "500m"
               memory: "512Mi"
 
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: auth-service
-  namespace: default
-  labels:
-    app: auth-service
-spec:
-  selector:
-    app: auth-service
-  ports:
-    - protocol: TCP
-      port: 5000
-      targetPort: 5000
-  type: ClusterIP

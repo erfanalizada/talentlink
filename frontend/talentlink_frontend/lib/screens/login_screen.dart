@@ -15,58 +15,91 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
   final AuthService _auth = AuthService();
 
-Future<void> _login() async {
-  setState(() => _loading = true);
-  final tokenData = await _auth.login(
-    _usernameController.text,
-    _passwordController.text,
-  );
-  setState(() => _loading = false);
-
-  if (tokenData != null && mounted) {
-    final token = tokenData['access_token'];
-    final decoded = JwtDecoder.decode(token);
-
-    // Extract roles from token (usually stored in realm_access)
-    final roles = decoded['realm_access']?['roles'] ?? [];
-    print("✅ Logged in! Roles: $roles");
-
-    // Optionally, redirect based on role
-    if (roles.contains('employer')) {
-      Navigator.pushReplacementNamed(context, '/employerDashboard');
-    } else if (roles.contains('employee')) {
-      Navigator.pushReplacementNamed(context, '/employeeDashboard');
-    } else {
-      Navigator.pushReplacementNamed(context, '/services');
-    }
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Login failed')),
+  Future<void> _login() async {
+    setState(() => _loading = true);
+    final tokenData = await _auth.login(
+      _usernameController.text,
+      _passwordController.text,
     );
-  }
-}
+    setState(() => _loading = false);
 
+    if (tokenData != null && mounted) {
+      final token = tokenData['access_token'];
+      final decoded = JwtDecoder.decode(token);
+      final roles = decoded['realm_access']?['roles'] ?? [];
+      print("✅ Logged in! Roles: $roles");
+
+      // Navigate directly to the dashboard
+      Navigator.pushReplacementNamed(context, '/services');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid credentials')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            TextField(controller: _usernameController, decoration: const InputDecoration(labelText: 'Username')),
-            TextField(controller: _passwordController, decoration: const InputDecoration(labelText: 'Password'), obscureText: true),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _loading ? null : _login,
-              child: _loading ? const CircularProgressIndicator() : const Text('Login'),
+      backgroundColor: Colors.indigo[50],
+      body: Center(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(30),
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              child: Padding(
+                padding: const EdgeInsets.all(25),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.lock_outline, size: 70, color: Colors.indigo),
+                    const SizedBox(height: 10),
+                    const Text("Welcome Back", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 30),
+                    TextField(
+                      controller: _usernameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Username or Email',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: _passwordController,
+                      decoration: const InputDecoration(
+                        labelText: 'Password',
+                        border: OutlineInputBorder(),
+                      ),
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: 25),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _loading ? null : _login,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.indigo,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: _loading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text('Login', style: TextStyle(fontSize: 18)),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextButton(
+                      onPressed: () => Navigator.pushNamed(context, '/register'),
+                      child: const Text("Don't have an account? Register"),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            TextButton(
-              onPressed: () => Navigator.pushNamed(context, '/register'),
-              child: const Text('Create account'),
-            ),
-          ],
+          ),
         ),
       ),
     );
