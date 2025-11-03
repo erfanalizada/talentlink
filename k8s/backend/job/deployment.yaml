@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: job-service
+  namespace: default
   labels:
     app: job-service
 spec:
@@ -18,31 +19,62 @@ spec:
         - name: ghcr-secret
       containers:
         - name: job-service
-          image: ghcr.io/erfanalizada/job-service   # ✅ no tag, CI/CD injects SHA
-          imagePullPolicy: IfNotPresent             # ✅ avoids unnecessary re-pull
+          image: ghcr.io/erfanalizada/job-service   # ✅ CI/CD injects SHA
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
+
+          # ✅ Inject DB connection string securely
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: jobsdb-secret
+                  key: DATABASE_URL
+
+            # ✅ Optional: Keycloak or global service configs
+            - name: KEYCLOAK_URL
+              value: "http://keycloak.default.svc.cluster.local:8080/auth"
+            - name: KEYCLOAK_REALM
+              value: "talentlink"
+            - name: KEYCLOAK_CLIENT_ID
+              value: "job-service"
+
           readinessProbe:
             httpGet:
               path: /api/jobs/health
               port: 5000
             initialDelaySeconds: 5
             periodSeconds: 10
+
           livenessProbe:
             httpGet:
               path: /api/jobs/health
               port: 5000
             initialDelaySeconds: 10
             periodSeconds: 20
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: job-service
+  namespace: default
+  labels:
+    app: job-service
 spec:
   type: ClusterIP
   selector:
     app: job-service
   ports:
-    - port: 5000
+    - name: http
+      port: 5000
       targetPort: 5000
