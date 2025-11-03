@@ -1,6 +1,14 @@
 from flask import Flask, jsonify
+from sqlalchemy import create_engine, text
+import os
 
 app = Flask(__name__)
+
+# Read DATABASE_URL from environment variable
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+# Create the SQLAlchemy engine
+engine = create_engine(DATABASE_URL)
 
 @app.route("/api/users/profile")
 def profile():
@@ -25,4 +33,3 @@ def test_db():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-
