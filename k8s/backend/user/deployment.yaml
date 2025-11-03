@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: user-service
+  namespace: default
   labels:
     app: user-service
 spec:
@@ -18,31 +19,62 @@ spec:
         - name: ghcr-secret
       containers:
         - name: user-service
-          image: ghcr.io/erfanalizada/user-service   # ✅ CI/CD will append SHA
-          imagePullPolicy: IfNotPresent              # ✅ avoids unnecessary re-pulls
+          image: ghcr.io/erfanalizada/user-service:latest   # 🧩 Replace with your actual tag if needed
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
+
+          # ✅ Inject DB connection string securely
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: userdb-secret
+                  key: DATABASE_URL
+
+          # ✅ Optional: add Keycloak or other environment configs
+            - name: KEYCLOAK_URL
+              value: "http://keycloak.default.svc.cluster.local:8080/auth"
+            - name: KEYCLOAK_REALM
+              value: "talentlink"
+            - name: KEYCLOAK_CLIENT_ID
+              value: "user-service"
+
           readinessProbe:
             httpGet:
               path: /api/users/health
               port: 5000
             initialDelaySeconds: 5
             periodSeconds: 10
+
           livenessProbe:
             httpGet:
               path: /api/users/health
               port: 5000
             initialDelaySeconds: 10
             periodSeconds: 20
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: user-service
+  namespace: default
+  labels:
+    app: user-service
 spec:
   type: ClusterIP
   selector:
     app: user-service
   ports:
-    - port: 5000
+    - name: http
+      port: 5000
       targetPort: 5000

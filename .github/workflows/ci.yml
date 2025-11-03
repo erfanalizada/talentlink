@@ -1,4 +1,4 @@
-name: CI/CD - All Services (ARM64)
+name: CI/CD - All Services (AMD64)
 
 on:
   push:
@@ -9,33 +9,61 @@ permissions:
   contents: read
   packages: write
 
-# Each job runs independently and in parallel
 jobs:
+  # ---------------------------------------------------------
+  # Detect which microservices have changed
+  # ---------------------------------------------------------
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      auth: ${{ steps.filter.outputs.auth }}
+      user: ${{ steps.filter.outputs.user }}
+      job: ${{ steps.filter.outputs.job }}
+      notif: ${{ steps.filter.outputs.notif }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      keycloak: ${{ steps.filter.outputs.keycloak }}
+    steps:
+      - uses: actions/checkout@v4
 
-  # ---------------- AUTH SERVICE ----------------
+      - name: Detect file changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            auth:
+              - 'backend/auth-service/**'
+            user:
+              - 'backend/user-service/**'
+            job:
+              - 'backend/job-service/**'
+            notif:
+              - 'backend/notification-service/**'
+            frontend:
+              - 'frontend/**'
+            keycloak:
+              - 'k8s/backend/keycloak/**'
+              - '.github/workflows/**'
+
+  # ---------------------------------------------------------
+  # AUTH SERVICE
+  # ---------------------------------------------------------
   build-and-deploy-auth:
+    needs: changes
+    if: ${{ needs.changes.outputs.auth == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up QEMU (ARM emulation)
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver: docker-container
-          install: true
 
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Build & push auth-service (ARM64)
+      - name: Build & push auth-service (AMD64)
         run: |
           docker buildx build \
-            --platform linux/arm64 \
+            --platform linux/amd64 \
             -t ghcr.io/${{ github.actor }}/auth-service:${{ github.sha }} \
             -t ghcr.io/${{ github.actor }}/auth-service:latest \
             ./backend/auth-service \
@@ -44,18 +72,13 @@ jobs:
       - name: Install OCI CLI
         run: pip install --upgrade pip && pip install oci-cli
 
-      - name: Configure OCI CLI
+      - name: Configure OCI CLI and kubeconfig
         run: |
-          mkdir -p $HOME/.oci
+          mkdir -p $HOME/.oci $HOME/.kube
           echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
-          chmod 600 $HOME/.oci/config $HOME/.oci/oci_api_key.pem
-
-      - name: Configure kubeconfig
-        run: |
-          mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
+          chmod 600 $HOME/.oci/config $HOME/.oci/oci_api_key.pem $HOME/.kube/config
 
       - name: Deploy auth-service
         run: |
@@ -63,31 +86,26 @@ jobs:
           kubectl rollout status deployment/auth-service
           kubectl get pods -o wide
 
-
-  # ---------------- USER SERVICE ----------------
+  # ---------------------------------------------------------
+  # USER SERVICE
+  # ---------------------------------------------------------
   build-and-deploy-user:
+    needs: changes
+    if: ${{ needs.changes.outputs.user == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up QEMU (ARM emulation)
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver: docker-container
-          install: true
 
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Build & push user-service (ARM64)
+      - name: Build & push user-service (AMD64)
         run: |
           docker buildx build \
-            --platform linux/arm64 \
+            --platform linux/amd64 \
             -t ghcr.io/${{ github.actor }}/user-service:${{ github.sha }} \
             -t ghcr.io/${{ github.actor }}/user-service:latest \
             ./backend/user-service \
@@ -96,18 +114,13 @@ jobs:
       - name: Install OCI CLI
         run: pip install --upgrade pip && pip install oci-cli
 
-      - name: Configure OCI CLI
+      - name: Configure OCI CLI and kubeconfig
         run: |
-          mkdir -p $HOME/.oci
+          mkdir -p $HOME/.oci $HOME/.kube
           echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
-          chmod 600 $HOME/.oci/config $HOME/.oci/oci_api_key.pem
-
-      - name: Configure kubeconfig
-        run: |
-          mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
+          chmod 600 $HOME/.oci/config $HOME/.oci/oci_api_key.pem $HOME/.kube/config
 
       - name: Deploy user-service
         run: |
@@ -115,31 +128,26 @@ jobs:
           kubectl rollout status deployment/user-service
           kubectl get pods -o wide
 
-
-  # ---------------- JOB SERVICE ----------------
+  # ---------------------------------------------------------
+  # JOB SERVICE
+  # ---------------------------------------------------------
   build-and-deploy-job:
+    needs: changes
+    if: ${{ needs.changes.outputs.job == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up QEMU (ARM emulation)
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver: docker-container
-          install: true
 
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Build & push job-service (ARM64)
+      - name: Build & push job-service (AMD64)
         run: |
           docker buildx build \
-            --platform linux/arm64 \
+            --platform linux/amd64 \
             -t ghcr.io/${{ github.actor }}/job-service:${{ github.sha }} \
             -t ghcr.io/${{ github.actor }}/job-service:latest \
             ./backend/job-service \
@@ -148,18 +156,13 @@ jobs:
       - name: Install OCI CLI
         run: pip install --upgrade pip && pip install oci-cli
 
-      - name: Configure OCI CLI
+      - name: Configure OCI CLI and kubeconfig
         run: |
-          mkdir -p $HOME/.oci
+          mkdir -p $HOME/.oci $HOME/.kube
           echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
-          chmod 600 $HOME/.oci/config $HOME/.oci/oci_api_key.pem
-
-      - name: Configure kubeconfig
-        run: |
-          mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
+          chmod 600 $HOME/.oci/config $HOME/.oci/oci_api_key.pem $HOME/.kube/config
 
       - name: Deploy job-service
         run: |
@@ -167,31 +170,26 @@ jobs:
           kubectl rollout status deployment/job-service
           kubectl get pods -o wide
 
-
-  # ---------------- NOTIFICATION SERVICE ----------------
+  # ---------------------------------------------------------
+  # NOTIFICATION SERVICE
+  # ---------------------------------------------------------
   build-and-deploy-notification:
+    needs: changes
+    if: ${{ needs.changes.outputs.notif == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up QEMU (ARM emulation)
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver: docker-container
-          install: true
 
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Build & push notification-service (ARM64)
+      - name: Build & push notification-service (AMD64)
         run: |
           docker buildx build \
-            --platform linux/arm64 \
+            --platform linux/amd64 \
             -t ghcr.io/${{ github.actor }}/notification-service:${{ github.sha }} \
             -t ghcr.io/${{ github.actor }}/notification-service:latest \
             ./backend/notification-service \
@@ -200,18 +198,13 @@ jobs:
       - name: Install OCI CLI
         run: pip install --upgrade pip && pip install oci-cli
 
-      - name: Configure OCI CLI
+      - name: Configure OCI CLI and kubeconfig
         run: |
-          mkdir -p $HOME/.oci
+          mkdir -p $HOME/.oci $HOME/.kube
           echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
-          chmod 600 $HOME/.oci/config $HOME/.oci/oci_api_key.pem
-
-      - name: Configure kubeconfig
-        run: |
-          mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
+          chmod 600 $HOME/.oci/config $HOME/.oci/oci_api_key.pem $HOME/.kube/config
 
       - name: Deploy notification-service
         run: |
@@ -219,31 +212,26 @@ jobs:
           kubectl rollout status deployment/notification-service
           kubectl get pods -o wide
 
-
-  # ---------------- FRONTEND ----------------
+  # ---------------------------------------------------------
+  # FRONTEND
+  # ---------------------------------------------------------
   build-and-deploy-frontend:
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up QEMU (ARM emulation)
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver: docker-container
-          install: true
 
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Build & push frontend (ARM64)
+      - name: Build & push frontend (AMD64)
         run: |
           docker buildx build \
-            --platform linux/arm64 \
+            --platform linux/amd64 \
             -t ghcr.io/${{ github.actor }}/talentlink-frontend:${{ github.sha }} \
             -t ghcr.io/${{ github.actor }}/talentlink-frontend:latest \
             ./frontend \
@@ -252,18 +240,13 @@ jobs:
       - name: Install OCI CLI
         run: pip install --upgrade pip && pip install oci-cli
 
-      - name: Configure OCI CLI
+      - name: Configure OCI CLI and kubeconfig
         run: |
-          mkdir -p $HOME/.oci
+          mkdir -p $HOME/.oci $HOME/.kube
           echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
-          chmod 600 $HOME/.oci/config $HOME/.oci/oci_api_key.pem
-
-      - name: Configure kubeconfig
-        run: |
-          mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
+          chmod 600 $HOME/.oci/config $HOME/.oci/oci_api_key.pem $HOME/.kube/config
 
       - name: Deploy frontend
         run: |
@@ -271,9 +254,12 @@ jobs:
           kubectl rollout status deployment/frontend
           kubectl get pods -o wide
 
-
-  # ---------------- KEYCLOAK ----------------
+  # ---------------------------------------------------------
+  # KEYCLOAK
+  # ---------------------------------------------------------
   deploy-keycloak:
+    needs: changes
+    if: ${{ needs.changes.outputs.keycloak == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -281,18 +267,13 @@ jobs:
       - name: Install OCI CLI
         run: pip install --upgrade pip && pip install oci-cli
 
-      - name: Configure OCI CLI
+      - name: Configure OCI CLI and kubeconfig
         run: |
-          mkdir -p $HOME/.oci
+          mkdir -p $HOME/.oci $HOME/.kube
           echo "${{ secrets.OCI_CONFIG }}" | base64 --decode > $HOME/.oci/config
           echo "${{ secrets.OCI_KEY }}" | base64 --decode > $HOME/.oci/oci_api_key.pem
-          chmod 600 $HOME/.oci/config $HOME/.oci/oci_api_key.pem
-
-      - name: Configure kubeconfig
-        run: |
-          mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
+          chmod 600 $HOME/.oci/config $HOME/.oci/oci_api_key.pem $HOME/.kube/config
 
       - name: Create/Update Keycloak admin secret
         run: |
@@ -314,5 +295,3 @@ jobs:
         run: |
           kubectl rollout status deployment/keycloak -n default
           kubectl get pods -n default -o wide
-
-          
