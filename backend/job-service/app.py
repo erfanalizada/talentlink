@@ -21,8 +21,8 @@ def list_jobs():
 def health():
     return {"status": "job-service ok"}
 
-# ✅ Add DB connectivity test endpoint
-@app.route("/api/jobs/test-db", methods=["POST"])
+# ✅ Add DB connectivity test endpoint (supports GET + POST)
+@app.route("/api/jobs/test-db", methods=["GET", "POST"])
 def test_db():
     try:
         with engine.connect() as conn:

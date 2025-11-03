@@ -6,7 +6,7 @@ metadata:
   labels:
     app: notification-service
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: notification-service
@@ -19,20 +19,17 @@ spec:
         - name: ghcr-secret
       containers:
         - name: notification-service
-          image: ghcr.io/erfanalizada/notification-service   # ✅ CI/CD injects SHA
+          image: ghcr.io/erfanalizada/notification-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
 
-          # ✅ Inject DB connection string securely
           env:
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: notifdb-secret
                   key: DATABASE_URL
-
-            # ✅ Optional: Keycloak or global configs
             - name: KEYCLOAK_URL
               value: "http://keycloak.default.svc.cluster.local:8080/auth"
             - name: KEYCLOAK_REALM
@@ -42,10 +39,10 @@ spec:
 
           readinessProbe:
             httpGet:
-              path: /api/notifications/health
+              path: /api/notifications/test-db
               port: 5000
             initialDelaySeconds: 5
-            periodSeconds: 10
+            periodSeconds: 15
 
           livenessProbe:
             httpGet:
@@ -53,10 +50,6 @@ spec:
               port: 5000
             initialDelaySeconds: 10
             periodSeconds: 20
-
-
-
-
 ---
 apiVersion: v1
 kind: Service

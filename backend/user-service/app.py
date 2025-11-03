@@ -4,10 +4,10 @@ import os
 
 app = Flask(__name__)
 
-# Read DATABASE_URL from environment variable
+# ✅ Read DATABASE_URL from environment variable
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Create the SQLAlchemy engine
+# ✅ Create SQLAlchemy engine once at startup
 engine = create_engine(DATABASE_URL)
 
 @app.route("/api/users/profile")
@@ -22,7 +22,8 @@ def profile():
 def health():
     return {"status": "user-service ok"}
 
-@app.route("/api/users/test-db", methods=["POST"])
+# ✅ DB connectivity test (readiness endpoint)
+@app.route("/api/users/test-db", methods=["GET", "POST"])
 def test_db():
     try:
         with engine.connect() as conn:

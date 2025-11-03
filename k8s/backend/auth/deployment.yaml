@@ -6,7 +6,7 @@ metadata:
   labels:
     app: auth-service
 spec:
-  replicas: 2
+  replicas: 1   # ✅ reduced for OKE free tier (you can scale up later)
   selector:
     matchLabels:
       app: auth-service
@@ -15,54 +15,70 @@ spec:
       labels:
         app: auth-service
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: auth-service
-          image: ghcr.io/erfanalizada/auth-service:latest   # ✅ your actual image
-          imagePullPolicy: Always
+          image: ghcr.io/erfanalizada/auth-service:latest   # ✅ your latest image tag
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
               name: http
 
-          # --- Environment variables ---
+          # ✅ Environment configuration
           envFrom:
             - secretRef:
-                name: auth-db-secret         # Database connection info
+                name: auth-db-secret          # contains DATABASE_URL for auth DB
             - secretRef:
-                name: keycloak-admin-secret  # Keycloak admin credentials
+                name: keycloak-admin-secret   # contains Keycloak admin credentials
 
           env:
-            # --- Keycloak setup ---
+            # ✅ Keycloak setup
             - name: KEYCLOAK_URL
               value: "https://talentlink-erfan.nl/auth"
             - name: KEYCLOAK_REALM
               value: "talentlink"
 
-            # The client your backend uses for admin access
+            # ✅ The client this backend uses for admin access
             - name: KEYCLOAK_ADMIN_CLIENT_ID
               value: "auth-service"
 
-            # The client your Flutter frontend uses for login
+            # ✅ The client your Flutter frontend uses for login
             - name: KEYCLOAK_LOGIN_CLIENT_ID
               value: "frontend-client"
 
-            # Optional: Flask runtime
+            # ✅ Optional Flask runtime config
             - name: FLASK_ENV
               value: "production"
 
-          # --- Health checks ---
+          # ✅ Health checks
           readinessProbe:
             httpGet:
               path: /api/auth/dbtest
               port: 5000
-            initialDelaySeconds: 15
-            periodSeconds: 10
+            initialDelaySeconds: 10
+            periodSeconds: 15
 
           livenessProbe:
             httpGet:
               path: /api/auth/dbtest
               port: 5000
-            initialDelaySeconds: 30
-            periodSeconds: 15
+            initialDelaySeconds: 20
+            periodSeconds: 30
 
-
-
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: default
+  labels:
+    app: auth-service
+spec:
+  type: ClusterIP
+  selector:
+    app: auth-service
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000

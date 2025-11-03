@@ -18,8 +18,8 @@ def send_notification():
 def health():
     return {"status": "notification-service ok"}
 
-# ✅ Add DB connectivity test endpoint
-@app.route("/api/notifications/test-db", methods=["POST"])
+# ✅ Add DB connectivity test endpoint (accepts GET + POST)
+@app.route("/api/notifications/test-db", methods=["GET", "POST"])
 def test_db():
     try:
         with engine.connect() as conn:

@@ -6,7 +6,7 @@ metadata:
   labels:
     app: user-service
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: user-service
@@ -19,20 +19,17 @@ spec:
         - name: ghcr-secret
       containers:
         - name: user-service
-          image: ghcr.io/erfanalizada/user-service:latest   # 🧩 Replace with your actual tag if needed
+          image: ghcr.io/erfanalizada/user-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
 
-          # ✅ Inject DB connection string securely
           env:
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: userdb-secret
                   key: DATABASE_URL
-
-          # ✅ Optional: add Keycloak or other environment configs
             - name: KEYCLOAK_URL
               value: "http://keycloak.default.svc.cluster.local:8080/auth"
             - name: KEYCLOAK_REALM
@@ -42,10 +39,10 @@ spec:
 
           readinessProbe:
             httpGet:
-              path: /api/users/health
+              path: /api/users/test-db
               port: 5000
             initialDelaySeconds: 5
-            periodSeconds: 10
+            periodSeconds: 15
 
           livenessProbe:
             httpGet:
@@ -53,10 +50,6 @@ spec:
               port: 5000
             initialDelaySeconds: 10
             periodSeconds: 20
-
-
-
-
 ---
 apiVersion: v1
 kind: Service
