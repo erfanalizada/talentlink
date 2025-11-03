@@ -45,7 +45,6 @@ jobs:
               - 'k8s/frontend/**'
             keycloak:
               - 'k8s/backend/keycloak/**'
-              - '.github/workflows/**'
 
   # ---------------- AUTH SERVICE ----------------
   build-and-deploy-auth:
