@@ -118,3 +118,21 @@ app.*.symbols
 !**/ios/**/default.perspectivev3
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 !/dev/ci/**/Gemfile.lock
+
+# =====================================
+# Terraform (ignore local + sensitive files)
+# =====================================
+infra/.terraform/
+infra/**/.terraform/*
+infra/*.tfstate
+infra/*.tfstate.backup
+infra/terraform.tfstate.d/
+infra/terraform_state.json
+infra/*.tfvars
+infra/*.tfvars.json
+infra/*.auto.tfvars
+infra/*.plan
+infra/crash.log
+infra/crash.*.log
+infra/imported-oci-live/
+!infra/.terraform.lock.hcl
