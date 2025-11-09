@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Detect changed services
+      - name: Detect changed directories
         id: filter
         uses: dorny/paths-filter@v3
         with:
@@ -37,9 +37,11 @@ jobs:
               - "frontend/**"
               - "k8s/frontend/**"
 
+  #
   # ---------------------------------------
-  # AUTH SERVICE
+  # AUTH SERVICE (MULTI-ARCH)
   # ---------------------------------------
+  #
   build-auth:
     needs: detect-changes
     if: needs.detect-changes.outputs.auth == 'true'
@@ -50,8 +52,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
 
       - name: Login GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" |
-          docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Build & Push auth-service
         run: |
@@ -62,11 +63,12 @@ jobs:
             ./backend/auth-service \
             --push
 
-      - name: Update auth manifest (GitOps)
+      - name: Update Kubernetes manifest
         run: |
-          sed -i "s|image: ghcr.io.*/auth-service:.*|image: ghcr.io/${{ github.actor }}/auth-service:${{ github.sha }}|" k8s/backend/auth/deployment.yaml
+          sed -i "s|image: ghcr.io.*/auth-service:.*|image: ghcr.io/${{ github.actor }}/auth-service:${{ github.sha }}|" \
+            k8s/backend/auth/deployment.yaml
 
-      - name: Commit updated manifest
+      - name: Commit manifest update
         run: |
           git config user.email "ci@github"
           git config user.name "GitHub Actions"
@@ -74,9 +76,11 @@ jobs:
           git commit -m "Update auth-service image to ${{ github.sha }}" || echo "No changes"
           git push
 
+  #
   # ---------------------------------------
-  # USER SERVICE
+  # USER SERVICE (MULTI-ARCH)
   # ---------------------------------------
+  #
   build-user:
     needs: detect-changes
     if: needs.detect-changes.outputs.user == 'true'
@@ -87,8 +91,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
 
       - name: Login GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" |
-          docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Build & Push user-service
         run: |
@@ -99,9 +102,10 @@ jobs:
             ./backend/user-service \
             --push
 
-      - name: Update user manifest
+      - name: Update manifest
         run: |
-          sed -i "s|image: ghcr.io.*/user-service:.*|image: ghcr.io/${{ github.actor }}/user-service:${{ github.sha }}|" k8s/backend/user/deployment.yaml
+          sed -i "s|image: ghcr.io.*/user-service:.*|image: ghcr.io/${{ github.actor }}/user-service:${{ github.sha }}|" \
+            k8s/backend/user/deployment.yaml
 
       - name: Commit
         run: |
@@ -111,9 +115,11 @@ jobs:
           git commit -m "Update user-service image to ${{ github.sha }}" || echo "No changes"
           git push
 
+  #
   # ---------------------------------------
-  # JOB SERVICE
+  # JOB SERVICE (MULTI-ARCH)
   # ---------------------------------------
+  #
   build-job:
     needs: detect-changes
     if: needs.detect-changes.outputs.job == 'true'
@@ -124,8 +130,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
 
       - name: Login GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" |
-          docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Build & Push job-service
         run: |
@@ -136,9 +141,10 @@ jobs:
             ./backend/job-service \
             --push
 
-      - name: Update job manifest
+      - name: Update manifest
         run: |
-          sed -i "s|image: ghcr.io.*/job-service:.*|image: ghcr.io/${{ github.actor }}/job-service:${{ github.sha }}|" k8s/backend/job/deployment.yaml
+          sed -i "s|image: ghcr.io.*/job-service:.*|image: ghcr.io/${{ github.actor }}/job-service:${{ github.sha }}|" \
+            k8s/backend/job/deployment.yaml
 
       - name: Commit
         run: |
@@ -148,9 +154,11 @@ jobs:
           git commit -m "Update job-service image to ${{ github.sha }}" || echo "No changes"
           git push
 
+  #
   # ---------------------------------------
-  # NOTIFICATION SERVICE
+  # NOTIFICATION SERVICE (MULTI-ARCH)
   # ---------------------------------------
+  #
   build-notif:
     needs: detect-changes
     if: needs.detect-changes.outputs.notif == 'true'
@@ -161,8 +169,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
 
       - name: Login GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" |
-          docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Build & Push notification-service
         run: |
@@ -173,9 +180,10 @@ jobs:
             ./backend/notification-service \
             --push
 
-      - name: Update notification manifest
+      - name: Update manifest
         run: |
-          sed -i "s|image: ghcr.io.*/notification-service:.*|image: ghcr.io/${{ github.actor }}/notification-service:${{ github.sha }}|" k8s/backend/notification/deployment.yaml
+          sed -i "s|image: ghcr.io.*/notification-service:.*|image: ghcr.io/${{ github.actor }}/notification-service:${{ github.sha }}|" \
+            k8s/backend/notification/deployment.yaml
 
       - name: Commit
         run: |
@@ -185,34 +193,35 @@ jobs:
           git commit -m "Update notification-service image to ${{ github.sha }}" || echo "No changes"
           git push
 
+  #
   # ---------------------------------------
-  # FRONTEND (AMD64 ONLY – FIX FOR NGINX CRASH)
+  # FRONTEND (AMD64 ONLY)
   # ---------------------------------------
+  #
   build-frontend:
     needs: detect-changes
     if: needs.detect-changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
       - name: Login GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" |
-          docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Build & Push frontend (AMD64 only)
         run: |
           docker buildx build \
             --platform linux/amd64 \
-            -t ghcr.io/${{ github.actor }}/talentlink-frontend:${{ github.sha }} \
-            -t ghcr.io/${{ github.actor }}/talentlink-frontend:latest \
+            -t ghcr.io/${{ github.actor }}/frontend:${{ github.sha }} \
+            -t ghcr.io/${{ github.actor }}/frontend:latest \
             ./frontend \
             --push
 
       - name: Update frontend manifest
         run: |
-          sed -i "s|image: ghcr.io.*/talentlink-frontend:.*|image: ghcr.io/${{ github.actor }}/talentlink-frontend:${{ github.sha }}|" k8s/frontend/deployment.yaml
+          sed -i "s|image: ghcr.io.*/frontend:.*|image: ghcr.io/${{ github.actor }}/frontend:${{ github.sha }}|" \
+            k8s/frontend/deployment.yaml
 
       - name: Commit
         run: |

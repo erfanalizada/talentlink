@@ -4,7 +4,8 @@ metadata:
   name: frontend
   namespace: argocd
   annotations:
-    argocd-image-updater.argoproj.io/image-list: frontend=ghcr.io/erfanalizada/talentlink-frontend
+    # FIXED: Update image reference for ArgoCD Image Updater
+    argocd-image-updater.argoproj.io/image-list: frontend=ghcr.io/erfanalizada/frontend
     argocd-image-updater.argoproj.io/write-back-target: kustomization
 spec:
   project: default
