@@ -20,85 +20,129 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Detect changes
+      - name: Detect changed services
         id: filter
         uses: dorny/paths-filter@v3
         with:
           filters: |
             auth:
-              - 'backend/auth-service/**'
+              - "backend/auth-service/**"
             user:
-              - 'backend/user-service/**'
+              - "backend/user-service/**"
             job:
-              - 'backend/job-service/**'
+              - "backend/job-service/**"
             notif:
-              - 'backend/notification-service/**'
+              - "backend/notification-service/**"
             frontend:
-              - 'frontend/**'
+              - "frontend/**"
 
-  build-images:
+  build-auth:
     needs: detect-changes
+    if: needs.detect-changes.outputs.auth == 'true'
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        service: [auth, user, job, notif, frontend]
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          install: true
+      - name: Login GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" |
+          docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Login to GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-
-      - name: Skip if no changes detected
-        id: skip-check
-        run: |
-          if [ "${{ matrix.service }}" = "auth" ] && [ "${{ needs.detect-changes.outputs.auth }}" != "true" ]; then exit 78; fi
-          if [ "${{ matrix.service }}" = "user" ] && [ "${{ needs.detect-changes.outputs.user }}" != "true" ]; then exit 78; fi
-          if [ "${{ matrix.service }}" = "job" ] && [ "${{ needs.detect-changes.outputs.job }}" != "true" ]; then exit 78; fi
-          if [ "${{ matrix.service }}" = "notif" ] && [ "${{ needs.detect-changes.outputs.notif }}" != "true" ]; then exit 78; fi
-          if [ "${{ matrix.service }}" = "frontend" ] && [ "${{ needs.detect-changes.outputs.frontend }}" != "true" ]; then exit 78; fi
-
-      - name: Select image and context
-        id: mapping
-        run: |
-          case "${{ matrix.service }}" in
-            auth)
-              echo "context=./backend/auth-service" >> $GITHUB_OUTPUT
-              echo "image=auth-service" >> $GITHUB_OUTPUT
-              ;;
-            user)
-              echo "context=./backend/user-service" >> $GITHUB_OUTPUT
-              echo "image=user-service" >> $GITHUB_OUTPUT
-              ;;
-            job)
-              echo "context=./backend/job-service" >> $GITHUB_OUTPUT
-              echo "image=job-service" >> $GITHUB_OUTPUT
-              ;;
-            notif)
-              echo "context=./backend/notification-service" >> $GITHUB_OUTPUT
-              echo "image=notification-service" >> $GITHUB_OUTPUT
-              ;;
-            frontend)
-              echo "context=./frontend" >> $GITHUB_OUTPUT
-              echo "image=talentlink-frontend" >> $GITHUB_OUTPUT
-              ;;
-          esac
-
-      - name: Build and Push Image
-        if: steps.skip-check.conclusion == 'success'
+      - name: Build & Push auth-service
         run: |
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
-            -t ghcr.io/${{ github.actor }}/${{ steps.mapping.outputs.image }}:latest \
-            -t ghcr.io/${{ github.actor }}/${{ steps.mapping.outputs.image }}:${{ github.sha }} \
-            ${{ steps.mapping.outputs.context }} \
+            -t ghcr.io/${{ github.actor }}/auth-service:latest \
+            -t ghcr.io/${{ github.actor }}/auth-service:${{ github.sha }} \
+            ./backend/auth-service \
+            --push
+
+  build-user:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.user == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" |
+          docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build & Push user-service
+        run: |
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            -t ghcr.io/${{ github.actor }}/user-service:latest \
+            -t ghcr.io/${{ github.actor }}/user-service:${{ github.sha }} \
+            ./backend/user-service \
+            --push
+
+  build-job:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.job == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" |
+          docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build & Push job-service
+        run: |
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            -t ghcr.io/${{ github.actor }}/job-service:latest \
+            -t ghcr.io/${{ github.actor }}/job-service:${{ github.sha }} \
+            ./backend/job-service \
+            --push
+
+  build-notif:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.notif == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" |
+          docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build & Push notification-service
+        run: |
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            -t ghcr.io/${{ github.actor }}/notification-service:latest \
+            -t ghcr.io/${{ github.actor }}/notification-service:${{ github.sha }} \
+            ./backend/notification-service \
+            --push
+
+  build-frontend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" |
+          docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build & Push frontend
+        run: |
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            -t ghcr.io/${{ github.actor }}/talentlink-frontend:latest \
+            -t ghcr.io/${{ github.actor }}/talentlink-frontend:${{ github.sha }} \
+            ./frontend \
             --push
