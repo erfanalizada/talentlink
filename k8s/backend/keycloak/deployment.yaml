@@ -81,19 +81,3 @@ spec:
   resources:
     requests:
       storage: 1Gi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: keycloak
-  namespace: default
-  labels:
-    app: keycloak
-spec:
-  type: ClusterIP
-  selector:
-    app: keycloak
-  ports:
-    - name: http
-      port: 8080
-      targetPort: http
