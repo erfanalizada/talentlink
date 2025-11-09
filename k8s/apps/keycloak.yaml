@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/erfan-alizada/talentlink-clean.git
+    repoURL: https://github.com/erfanalizada/talentlink.git
     targetRevision: main
     path: k8s/backend/keycloak
   destination:
@@ -16,5 +16,3 @@ spec:
     automated:
       prune: true
       selfHeal: true
-    syncOptions:
-      - CreateNamespace=true

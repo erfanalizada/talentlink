@@ -5,12 +5,11 @@ metadata:
   namespace: argocd
   annotations:
     argocd-image-updater.argoproj.io/image-list: auth=ghcr.io/erfanalizada/auth-service
-    argocd-image-updater.argoproj.io/auth.update-strategy: latest
-    argocd-image-updater.argoproj.io/write-back-method: git
+    argocd-image-updater.argoproj.io/write-back-target: kustomization
 spec:
   project: default
   source:
-    repoURL: https://github.com/erfan-alizada/talentlink-clean.git
+    repoURL: https://github.com/erfanalizada/talentlink.git
     targetRevision: main
     path: k8s/backend/auth
   destination:

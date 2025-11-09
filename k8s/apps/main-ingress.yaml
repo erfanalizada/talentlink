@@ -6,9 +6,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/erfan-alizada/talentlink-clean.git
+    repoURL: https://github.com/erfanalizada/talentlink.git
     targetRevision: main
-    path: k8s
+    path: k8s/ingress
   destination:
     server: https://kubernetes.default.svc
     namespace: default

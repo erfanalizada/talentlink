@@ -6,3 +6,4 @@ resources:
 images:
   - name: ghcr.io/erfanalizada/auth-service
     newTag: latest
+
