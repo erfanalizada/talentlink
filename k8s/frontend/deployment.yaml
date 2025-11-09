@@ -18,8 +18,8 @@ spec:
         - name: ghcr-secret
       containers:
         - name: frontend
-          image: ghcr.io/erfanalizada/talentlink-frontend:latest
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/erfanalizada/talentlink-frontend:{{ sha }}
+          imagePullPolicy: Always
           ports:
             - containerPort: 80
           resources:
