@@ -1,0 +1,28 @@
+﻿apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-image-updater-config
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-image-updater-config
+    app.kubernetes.io/part-of: argocd-image-updater
+data:
+  registries.conf: |
+    registries:
+      - name: ghcr
+        api_url: https://ghcr.io
+        ping: yes
+        credentials: secret:argocd/ghcr-creds
+
+  git.config: |
+    repositories:
+      - url: https://github.com/erfan-alizada/talentlink-clean.git
+        credentials: secret:argocd/git-creds
+
+  config.yaml: |
+    log.level: info
+    update.interval: 2m
+    git.writeback.enabled: true
+    git.writeback.commit-message: "chore: update image tags [skip ci]"
+    git.writeback.branch: main
+    argocd.grpc-web: true
