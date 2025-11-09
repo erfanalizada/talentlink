@@ -18,7 +18,7 @@ spec:
         - name: ghcr-secret
       containers:
         - name: frontend
-          image: ghcr.io/erfanalizada/frontend:latest
+          image: ghcr.io/erfanalizada/frontend:latestsss
           imagePullPolicy: Always
           ports:
             - containerPort: 80
