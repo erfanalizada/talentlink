@@ -9,9 +9,14 @@ permissions:
   packages: write
 
 jobs:
-  build:
+  detect-changes:
     runs-on: ubuntu-latest
-
+    outputs:
+      auth: ${{ steps.filter.outputs.auth }}
+      user: ${{ steps.filter.outputs.user }}
+      job: ${{ steps.filter.outputs.job }}
+      notif: ${{ steps.filter.outputs.notif }}
+      frontend: ${{ steps.filter.outputs.frontend }}
     steps:
       - uses: actions/checkout@v4
 
@@ -31,58 +36,69 @@ jobs:
             frontend:
               - 'frontend/**'
 
+  build-images:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        service: [auth, user, job, notif, frontend]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          install: true
 
-      - name: Login GHCR
+      - name: Login to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      # AUTH ------------------------------------------------------
-      - name: Build Auth Service
-        if: steps.filter.outputs.auth == 'true'
+      - name: Skip if no changes detected
+        id: skip-check
         run: |
-          docker buildx build \
-            --platform linux/amd64 \
-            -t ghcr.io/${{ github.actor }}/auth-service:latest \
-            ./backend/auth-service \
-            --push
+          if [ "${{ matrix.service }}" = "auth" ] && [ "${{ needs.detect-changes.outputs.auth }}" != "true" ]; then exit 78; fi
+          if [ "${{ matrix.service }}" = "user" ] && [ "${{ needs.detect-changes.outputs.user }}" != "true" ]; then exit 78; fi
+          if [ "${{ matrix.service }}" = "job" ] && [ "${{ needs.detect-changes.outputs.job }}" != "true" ]; then exit 78; fi
+          if [ "${{ matrix.service }}" = "notif" ] && [ "${{ needs.detect-changes.outputs.notif }}" != "true" ]; then exit 78; fi
+          if [ "${{ matrix.service }}" = "frontend" ] && [ "${{ needs.detect-changes.outputs.frontend }}" != "true" ]; then exit 78; fi
 
-      # USER ------------------------------------------------------
-      - name: Build User Service
-        if: steps.filter.outputs.user == 'true'
+      - name: Select image and context
+        id: mapping
         run: |
-          docker buildx build \
-            --platform linux/amd64 \
-            -t ghcr.io/${{ github.actor }}/user-service:latest \
-            ./backend/user-service \
-            --push
+          case "${{ matrix.service }}" in
+            auth)
+              echo "context=./backend/auth-service" >> $GITHUB_OUTPUT
+              echo "image=auth-service" >> $GITHUB_OUTPUT
+              ;;
+            user)
+              echo "context=./backend/user-service" >> $GITHUB_OUTPUT
+              echo "image=user-service" >> $GITHUB_OUTPUT
+              ;;
+            job)
+              echo "context=./backend/job-service" >> $GITHUB_OUTPUT
+              echo "image=job-service" >> $GITHUB_OUTPUT
+              ;;
+            notif)
+              echo "context=./backend/notification-service" >> $GITHUB_OUTPUT
+              echo "image=notification-service" >> $GITHUB_OUTPUT
+              ;;
+            frontend)
+              echo "context=./frontend" >> $GITHUB_OUTPUT
+              echo "image=talentlink-frontend" >> $GITHUB_OUTPUT
+              ;;
+          esac
 
-      # JOB --------------------------------------------------------
-      - name: Build Job Service
-        if: steps.filter.outputs.job == 'true'
+      - name: Build and Push Image
+        if: steps.skip-check.conclusion == 'success'
         run: |
           docker buildx build \
-            --platform linux/amd64 \
-            -t ghcr.io/${{ github.actor }}/job-service:latest \
-            ./backend/job-service \
-            --push
-
-      # NOTIFICATION ----------------------------------------------
-      - name: Build Notification Service
-        if: steps.filter.outputs.notif == 'true'
-        run: |
-          docker buildx build \
-            --platform linux/amd64 \
-            -t ghcr.io/${{ github.actor }}/notification-service:latest \
-            ./backend/notification-service \
-            --push
-
-      # FRONTEND --------------------------------------------------
-      - name: Build Frontend
-        if: steps.filter.outputs.frontend == 'true'
-        run: |
-          docker buildx build \
-            --platform linux/amd64 \
-            -t ghcr.io/${{ github.actor }}/talentlink-frontend:latest \
-            ./frontend \
+            --platform linux/amd64,linux/arm64 \
+            -t ghcr.io/${{ github.actor }}/${{ steps.mapping.outputs.image }}:latest \
+            -t ghcr.io/${{ github.actor }}/${{ steps.mapping.outputs.image }}:${{ github.sha }} \
+            ${{ steps.mapping.outputs.context }} \
             --push
