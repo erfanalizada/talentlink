@@ -2,11 +2,15 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
+# Copy shared library first
+COPY shared/ /app/shared/
+
+# Copy service-specific files
+COPY application-service/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY ../shared /app/shared
-COPY . .
+# Copy service code
+COPY application-service/ .
 
 EXPOSE 5002
 

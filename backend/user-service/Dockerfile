@@ -2,18 +2,16 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install dependencies
-COPY requirements.txt .
+# Copy shared library first
+COPY shared/ /app/shared/
+
+# Copy service-specific files
+COPY user-service/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy shared library
-COPY ../shared /app/shared
-
 # Copy service code
-COPY . .
+COPY user-service/ .
 
-# Expose port
 EXPOSE 5000
 
-# Run the service
 CMD ["python", "app.py"]

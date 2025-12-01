@@ -1,0 +1,85 @@
+name: Deploy to Kubernetes
+
+on:
+  workflow_run:
+    workflows: ["Build and Push Backend Services"]
+    types:
+      - completed
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Verify cluster connection
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+
+      - name: Deploy User Service
+        run: |
+          kubectl apply -f k8s/backend/user/
+          kubectl rollout status deployment/user-service -n default --timeout=5m
+
+      - name: Deploy Job Service
+        run: |
+          kubectl apply -f k8s/backend/job/
+          kubectl rollout status deployment/job-service -n default --timeout=5m
+
+      - name: Deploy Application Service
+        run: |
+          kubectl apply -f k8s/backend/application/
+          kubectl rollout status deployment/application-service -n default --timeout=5m
+
+      - name: Deploy CV Service
+        run: |
+          kubectl apply -f k8s/backend/cv/
+          kubectl rollout status deployment/cv-service -n default --timeout=5m
+
+      - name: Deploy Matching Service
+        run: |
+          kubectl apply -f k8s/backend/matching/
+          kubectl rollout status deployment/matching-service -n default --timeout=5m
+
+      - name: Update Ingress
+        run: |
+          kubectl apply -f k8s/ingress-updated.yaml
+
+      - name: Verify Deployment
+        run: |
+          echo "=== Pods Status ==="
+          kubectl get pods -n default
+          echo ""
+          echo "=== Services ==="
+          kubectl get svc -n default
+          echo ""
+          echo "=== Ingress ==="
+          kubectl get ingress -n default
+
+      - name: Run Health Checks
+        run: |
+          echo "Waiting 30 seconds for services to stabilize..."
+          sleep 30
+
+          echo "Testing health endpoints..."
+          curl -f https://talentlink-erfan.nl/api/users/health || echo "User service health check failed"
+          curl -f https://talentlink-erfan.nl/api/jobs/health || echo "Job service health check failed"
+          curl -f https://talentlink-erfan.nl/api/applications/health || echo "Application service health check failed"
+          curl -f https://talentlink-erfan.nl/api/cv/health || echo "CV service health check failed"
+          curl -f https://talentlink-erfan.nl/api/matching/health || echo "Matching service health check failed"
