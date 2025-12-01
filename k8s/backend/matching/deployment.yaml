@@ -1,71 +1,48 @@
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: matching-service
-  namespace: default
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: matching-service
-  template:
-    metadata:
-      labels:
-        app: matching-service
-    spec:
-      imagePullSecrets:
-      - name: ghcr-secret
       containers:
-      - name: matching-service
-        image: ghcr.io/erfanalizada/matching-service:57acba87b03303f774c58602ebd02beb43e03afd
-        ports:
-        - containerPort: 5004
-        env:
-        - name: DATABASE_URL
-          value: "postgresql://user:password@localhost:5432/matchingdb"
-        - name: RABBITMQ_URL
-          value: "amqp://admin:adminpass123@rabbitmq:5672/%2F"
-        - name: KEYCLOAK_URL
-          value: "https://talentlink-erfan.nl/auth"
-        - name: KEYCLOAK_REALM
-          value: "talentlink"
-        - name: GEMINI_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: gemini-secret
-              key: GEMINI_API_KEY
-              optional: true
-        - name: PORT
-          value: "5004"
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "200m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        readinessProbe:
-          httpGet:
-            path: /api/matching/health
-            port: 5004
-          initialDelaySeconds: 10
-          periodSeconds: 5
-        livenessProbe:
-          httpGet:
-            path: /api/matching/health
-            port: 5004
-          initialDelaySeconds: 30
-          periodSeconds: 10
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: matching-service
-  namespace: default
-spec:
-  selector:
-    app: matching-service
-  ports:
-  - port: 5000
-    targetPort: 5004
-  type: ClusterIP
+        - name: matching-service
+          image: ghcr.io/erfanalizada/matching-service:57acba87b03303f774c58602ebd02beb43e03afd
+          ports:
+            - containerPort: 5004
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: matchingdb-secret
+                  key: DATABASE_URL
+
+            - name: RABBITMQ_URL
+              value: "amqp://admin:adminpass123@rabbitmq:5672/%2F"
+            - name: KEYCLOAK_URL
+              value: "https://talentlink-erfan.nl/auth"
+            - name: KEYCLOAK_REALM
+              value: "talentlink"
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: gemini-secret
+                  key: GEMINI_API_KEY
+                  optional: true
+            - name: PORT
+              value: "5004"
+
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+
+          readinessProbe:
+            httpGet:
+              path: /api/matching/health
+              port: 5004
+            initialDelaySeconds: 10
+            periodSeconds: 5
+
+          livenessProbe:
+            httpGet:
+              path: /api/matching/health
+              port: 5004
+            initialDelaySeconds: 30
+            periodSeconds: 10
