@@ -3,6 +3,7 @@ name: Build and Push Images (GitOps)
 on:
   push:
     branches: [main]
+  workflow_dispatch:   # ✅ allows manual trigger for full rebuild
 
 permissions:
   contents: write
@@ -42,7 +43,7 @@ jobs:
   # ---------------------------------------
   build-auth:
     needs: detect-changes
-    if: needs.detect-changes.outputs.auth == 'true'
+    if: needs.detect-changes.outputs.auth == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -80,7 +81,7 @@ jobs:
   # ---------------------------------------
   build-user:
     needs: detect-changes
-    if: needs.detect-changes.outputs.user == 'true'
+    if: needs.detect-changes.outputs.user == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -118,7 +119,7 @@ jobs:
   # ---------------------------------------
   build-job:
     needs: detect-changes
-    if: needs.detect-changes.outputs.job == 'true'
+    if: needs.detect-changes.outputs.job == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -156,7 +157,7 @@ jobs:
   # ---------------------------------------
   build-notif:
     needs: detect-changes
-    if: needs.detect-changes.outputs.notif == 'true'
+    if: needs.detect-changes.outputs.notif == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -194,7 +195,7 @@ jobs:
   # ---------------------------------------
   build-frontend:
     needs: detect-changes
-    if: needs.detect-changes.outputs.frontend == 'true'
+    if: needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
