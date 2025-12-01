@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cv-service
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cv-service
+  template:
+    metadata:
+      labels:
+        app: cv-service
+    spec:
+      imagePullSecrets:
+      - name: ghcr-secret
+      containers:
+      - name: cv-service
+        image: ghcr.io/erfanmoghadasi/talentlink-cv-service:latest
+        ports:
+        - containerPort: 5003
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: cvdb-secret
+              key: DATABASE_URL
+              optional: true
+        - name: RABBITMQ_URL
+          value: "amqp://guest:guest@rabbitmq:5672"
+        - name: KEYCLOAK_URL
+          value: "https://talentlink-erfan.nl/auth"
+        - name: KEYCLOAK_REALM
+          value: "talentlink"
+        - name: UPLOAD_FOLDER
+          value: "/app/uploads"
+        - name: PORT
+          value: "5003"
+        volumeMounts:
+        - name: cv-storage
+          mountPath: /app/uploads
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /api/cv/health
+            port: 5003
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /api/cv/health
+            port: 5003
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: cv-storage
+        persistentVolumeClaim:
+          claimName: cv-storage-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cv-service
+  namespace: default
+spec:
+  selector:
+    app: cv-service
+  ports:
+  - port: 5000
+    targetPort: 5003
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cv-storage-pvc
+  namespace: default
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: oci-bv
