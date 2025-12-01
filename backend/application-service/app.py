@@ -47,11 +47,12 @@ except Exception as e:
 
 
 # ============================================================================
-# EVENTS
+# EVENTS - FIXED: aggregate_id is FIRST (required), then other fields
 # ============================================================================
 
 @dataclass
 class ApplicationSubmittedEvent(DomainEvent):
+    aggregate_id: str  # ✅ Required field FIRST
     application_id: str
     job_id: str
     employee_id: str
@@ -68,6 +69,7 @@ class ApplicationSubmittedEvent(DomainEvent):
 
 @dataclass
 class ApplicationStatusChangedEvent(DomainEvent):
+    aggregate_id: str  # ✅ Required field FIRST
     application_id: str
     old_status: str
     new_status: str
@@ -84,6 +86,7 @@ class ApplicationStatusChangedEvent(DomainEvent):
 
 @dataclass
 class CandidateInvitedEvent(DomainEvent):
+    aggregate_id: str  # ✅ Required field FIRST
     application_id: str
     employee_id: str
     job_id: str
@@ -317,7 +320,7 @@ query_bus.register(GetJobApplicationsQuery, GetJobApplicationsHandler(database))
 # ============================================================================
 
 @app.route("/api/applications/health", methods=["GET"])
-def health():
+def application_health():  # ✅ Unique function name
     return jsonify({"status": "healthy", "service": "application-service"}), 200
 
 

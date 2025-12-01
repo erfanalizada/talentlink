@@ -51,7 +51,7 @@ MetricsMiddleware(app, "cv-service")
 
 from sqlalchemy import Column, String, Text, BigInteger, DateTime
 from sqlalchemy.dialects.postgresql import UUID
-from shared.database import Base
+from database import Base
 
 class CV(Base):
     __tablename__ = "cvs"
@@ -124,11 +124,12 @@ def extract_text(file_path, content_type):
 
 
 # ============================================================================
-# EVENTS
+# EVENTS - FIXED: aggregate_id is FIRST
 # ============================================================================
 
 @dataclass
 class CVUploadedEvent(DomainEvent):
+    aggregate_id: str  # ✅ Required field FIRST
     cv_id: str
     user_id: str
     file_path: str
@@ -146,7 +147,7 @@ class CVUploadedEvent(DomainEvent):
 # ============================================================================
 
 @app.route("/api/cv/health", methods=["GET"])
-def health():
+def cv_health():  # ✅ Unique function name
     return jsonify({"status": "healthy", "service": "cv-service"}), 200
 
 
