@@ -20,7 +20,15 @@ from auth import require_auth
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["https://talentlink-erfan.nl", "http://localhost:*"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "expose_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
+    }
+})
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyBA9ZHfWSgwLUqnRvDSAwZYWPWB5GuiIXQ")
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"

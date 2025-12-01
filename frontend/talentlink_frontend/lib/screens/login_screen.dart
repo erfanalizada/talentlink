@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:jwt_decoder/jwt_decoder.dart';
 import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -24,13 +23,16 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = false);
 
     if (tokenData != null && mounted) {
-      final token = tokenData['access_token'];
-      final decoded = JwtDecoder.decode(token);
-      final roles = decoded['realm_access']?['roles'] ?? [];
-      print("✅ Logged in! Roles: $roles");
-
-      // Navigate directly to the dashboard
-      Navigator.pushReplacementNamed(context, '/services');
+      // Navigate based on user role
+      if (AuthService.isEmployee) {
+        Navigator.pushReplacementNamed(context, '/employee-dashboard');
+      } else if (AuthService.isEmployer) {
+        Navigator.pushReplacementNamed(context, '/employer-dashboard');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid user role')),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Invalid credentials')),

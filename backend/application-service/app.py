@@ -24,7 +24,15 @@ from src.models.application import Application, ApplicationStatus
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["https://talentlink-erfan.nl", "http://localhost:*"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "expose_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
+    }
+})
 
 database = Database(os.getenv("DATABASE_URL"), "applicationdb")
 event_bus = RabbitMQEventBus(os.getenv("RABBITMQ_URL"))

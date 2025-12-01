@@ -9,7 +9,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)  # allow frontend requests
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["https://talentlink-erfan.nl", "http://localhost:*"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "expose_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
+    }
+})
 
 # =====================================================
 # 🔧 Database Configuration
