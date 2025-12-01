@@ -16,6 +16,120 @@ env:
   IMAGE_PREFIX: ${{ github.repository_owner }}/talentlink
 
 jobs:
+  build-auth-service:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-auth-service
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/auth-service
+          file: ./backend/auth-service/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Update auth-service manifest (GitOps)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          sed -i "s|image: ghcr.io.*/talentlink-auth-service:.*|image: ghcr.io/${{ env.IMAGE_PREFIX }}-auth-service:${{ github.sha }}|" k8s/backend/auth/deployment.yaml
+
+      - name: Commit updated manifest
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.email "ci@github"
+          git config user.name "GitHub Actions"
+          git add k8s/backend/auth/deployment.yaml
+          git commit -m "Update auth-service image to ${{ github.sha }}" || echo "No changes"
+          git pull --rebase origin main
+          git push
+
+  build-notification-service:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-notification-service
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/notification-service
+          file: ./backend/notification-service/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Update notification-service manifest (GitOps)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          sed -i "s|image: ghcr.io.*/talentlink-notification-service:.*|image: ghcr.io/${{ env.IMAGE_PREFIX }}-notification-service:${{ github.sha }}|" k8s/backend/notification/deployment.yaml
+
+      - name: Commit updated manifest
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.email "ci@github"
+          git config user.name "GitHub Actions"
+          git add k8s/backend/notification/deployment.yaml
+          git commit -m "Update notification-service image to ${{ github.sha }}" || echo "No changes"
+          git pull --rebase origin main
+          git push
+
   build-user-service:
     runs-on: ubuntu-latest
     permissions:
@@ -70,6 +184,7 @@ jobs:
           git config user.name "GitHub Actions"
           git add k8s/backend/user/deployment.yaml
           git commit -m "Update user-service image to ${{ github.sha }}" || echo "No changes"
+          git pull --rebase origin main
           git push
 
   build-job-service:
@@ -126,6 +241,7 @@ jobs:
           git config user.name "GitHub Actions"
           git add k8s/backend/job/deployment.yaml
           git commit -m "Update job-service image to ${{ github.sha }}" || echo "No changes"
+          git pull --rebase origin main
           git push
 
   build-application-service:
@@ -182,6 +298,7 @@ jobs:
           git config user.name "GitHub Actions"
           git add k8s/backend/application/deployment.yaml
           git commit -m "Update application-service image to ${{ github.sha }}" || echo "No changes"
+          git pull --rebase origin main
           git push
 
   build-cv-service:
@@ -238,6 +355,7 @@ jobs:
           git config user.name "GitHub Actions"
           git add k8s/backend/cv/deployment.yaml
           git commit -m "Update cv-service image to ${{ github.sha }}" || echo "No changes"
+          git pull --rebase origin main
           git push
 
   build-matching-service:
@@ -294,4 +412,5 @@ jobs:
           git config user.name "GitHub Actions"
           git add k8s/backend/matching/deployment.yaml
           git commit -m "Update matching-service image to ${{ github.sha }}" || echo "No changes"
+          git pull --rebase origin main
           git push
