@@ -17,7 +17,7 @@ spec:
       - name: ghcr-secret
       containers:
       - name: matching-service
-        image: ghcr.io/erfanalizada/talentlink-matching-service:5c046b9ec969ecab8cd64fa25f20f7c5b2b60962
+        image: ghcr.io/erfanalizada/matching-service:latest
         ports:
         - containerPort: 5004
         env:
