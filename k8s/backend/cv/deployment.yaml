@@ -17,7 +17,7 @@ spec:
       - name: ghcr-secret
       containers:
       - name: cv-service
-        image: ghcr.io/erfanmoghadasi/talentlink-cv-service:latest
+        image: ghcr.io/erfanalizada/talentlink-cv-service:0802274aff5993326689dde71134b35e308e5b7e
         ports:
         - containerPort: 5003
         env:
