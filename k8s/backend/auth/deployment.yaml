@@ -19,7 +19,7 @@ spec:
         - name: ghcr-secret
       containers:
         - name: auth-service
-          image: ghcr.io/erfanalizada/auth-service:aedbe609473e93f4243806452fe32fa35e6e73bf
+          image: ghcr.io/erfanalizada/auth-service:58a627511f5816d27169db9b879ca9a55851180d
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
