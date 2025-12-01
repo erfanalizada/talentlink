@@ -17,7 +17,7 @@ spec:
       - name: ghcr-secret
       containers:
       - name: application-service
-        image: ghcr.io/erfanalizada/application-service:57acba87b03303f774c58602ebd02beb43e03afd
+        image: ghcr.io/erfanalizada/application-service:4035dc6a16bae2d29cefbc59f02970443ea23c8b
         ports:
         - containerPort: 5002
         env:
