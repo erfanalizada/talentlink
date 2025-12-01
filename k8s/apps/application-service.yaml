@@ -1,11 +1,11 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: auth-service
+  name: application-service
   namespace: argocd
   annotations:
-    argocd-image-updater.argoproj.io/image-list: auth=ghcr.io/erfanalizada/auth-service
-    argocd-image-updater.argoproj.io/auth.pull-secret: pullsecret:argocd/ghcr-creds
+    argocd-image-updater.argoproj.io/image-list: application=ghcr.io/erfanalizada/application-service
+    argocd-image-updater.argoproj.io/application.pull-secret: pullsecret:argocd/ghcr-creds
     argocd-image-updater.argoproj.io/write-back-method: git
     argocd-image-updater.argoproj.io/git-branch: main
 spec:
@@ -13,7 +13,7 @@ spec:
   source:
     repoURL: https://github.com/erfanalizada/talentlink.git
     targetRevision: main
-    path: k8s/backend/auth
+    path: k8s/backend/application
   destination:
     server: https://kubernetes.default.svc
     namespace: default
@@ -21,5 +21,3 @@ spec:
     automated:
       prune: true
       selfHeal: true
-    syncOptions:
-      - CreateNamespace=true

@@ -47,12 +47,7 @@ jobs:
       - name: Configure kubeconfig from OKE
         run: |
           mkdir -p $HOME/.kube
-          $HOME/bin/oci ce cluster create-kubeconfig \
-            --cluster-id ${{ secrets.OKE_CLUSTER_ID }} \
-            --file $HOME/.kube/config \
-            --region ${{ secrets.OCI_CLI_REGION }} \
-            --token-version 2.0.0 \
-            --kube-endpoint PUBLIC_ENDPOINT
+          $HOME/bin/oci ce cluster create-kubeconfig --cluster-id "${{ secrets.OKE_CLUSTER_ID }}" --file "$HOME/.kube/config" --region "${{ secrets.OCI_CLI_REGION }}" --token-version "2.0.0" --kube-endpoint PUBLIC_ENDPOINT
           chmod 600 $HOME/.kube/config
 
       - name: Verify cluster connection
