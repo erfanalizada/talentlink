@@ -19,7 +19,7 @@ spec:
         - name: ghcr-secret
       containers:
         - name: notification-service
-          image: ghcr.io/erfanalizada/notification-service:latest
+          image: ghcr.io/erfanalizada/notification-service:d531a4ca31c6d9aa3a6e14eac3e8d6c36474edb6
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
