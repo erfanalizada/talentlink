@@ -16,7 +16,8 @@
       "Bash(kubectl patch:*)",
       "Bash(kubectl:*)",
       "Bash(echo:*)",
-      "Bash(kubectl delete:*)"
+      "Bash(kubectl delete:*)",
+      "Bash(git fetch:*)"
     ],
     "deny": [],
     "ask": []
