@@ -57,6 +57,7 @@ jobs:
         run: |
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
+            --build-context shared=./backend/shared \
             -t ghcr.io/${{ secrets.GHCR_USERNAME }}/auth-service:${{ github.sha }} \
             -t ghcr.io/${{ secrets.GHCR_USERNAME }}/auth-service:latest \
             ./backend/auth-service \
@@ -94,6 +95,7 @@ jobs:
         run: |
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
+            --build-context shared=./backend/shared \
             -t ghcr.io/${{ secrets.GHCR_USERNAME }}/user-service:${{ github.sha }} \
             -t ghcr.io/${{ secrets.GHCR_USERNAME }}/user-service:latest \
             ./backend/user-service \
@@ -131,6 +133,7 @@ jobs:
         run: |
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
+            --build-context shared=./backend/shared \
             -t ghcr.io/${{ secrets.GHCR_USERNAME }}/job-service:${{ github.sha }} \
             -t ghcr.io/${{ secrets.GHCR_USERNAME }}/job-service:latest \
             ./backend/job-service \
@@ -168,6 +171,7 @@ jobs:
         run: |
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
+            --build-context shared=./backend/shared \
             -t ghcr.io/${{ secrets.GHCR_USERNAME }}/notification-service:${{ github.sha }} \
             -t ghcr.io/${{ secrets.GHCR_USERNAME }}/notification-service:latest \
             ./backend/notification-service \
