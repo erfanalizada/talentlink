@@ -1,11 +1,9 @@
 from setuptools import setup
 
 setup(
-    name="shared",
+    name="talentlink-shared",
     version="0.1.0",
     description="Shared CQRS and Infrastructure Components",
-    packages=["shared"],
-    package_dir={"shared": "."},
     py_modules=[
         "auth",
         "cqrs_base",
