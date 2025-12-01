@@ -6,7 +6,7 @@ import json
 import asyncio
 import pika
 from typing import Dict, List, Callable
-from .cqrs_base import EventBus, DomainEvent
+from cqrs_base import EventBus, DomainEvent
 import os
 import logging
 
