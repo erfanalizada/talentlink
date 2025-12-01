@@ -3,7 +3,7 @@ CQRS Base Classes
 Provides foundation for Command Query Responsibility Segregation pattern
 """
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Generic, TypeVar, Dict, List
 from datetime import datetime
 import uuid
@@ -76,16 +76,12 @@ class QueryHandler(ABC, Generic[TQuery, TQueryResult]):
 @dataclass
 class DomainEvent(ABC):
     """Base class for domain events"""
-    event_id: str = None
-    event_type: str = None
-    timestamp: datetime = None
-    aggregate_id: str = None
+    event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    event_type: str = field(default=None)
+    timestamp: datetime = field(default_factory=datetime.utcnow)
+    aggregate_id: str = field(default=None)
 
     def __post_init__(self):
-        if self.event_id is None:
-            self.event_id = str(uuid.uuid4())
-        if self.timestamp is None:
-            self.timestamp = datetime.utcnow()
         if self.event_type is None:
             self.event_type = self.__class__.__name__
 
