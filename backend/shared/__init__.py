@@ -1,5 +1,7 @@
 """
 Shared CQRS and Infrastructure Components
+
+This package provides shared functionality for all TalentLink microservices.
 """
 from .cqrs_base import (
     Command, CommandHandler, CommandBus,

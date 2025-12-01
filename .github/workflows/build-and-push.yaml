@@ -34,18 +34,25 @@ jobs:
           filters: |
             auth:
               - "backend/auth-service/**"
+              - "backend/shared/**"
             user:
               - "backend/user-service/**"
+              - "backend/shared/**"
             job:
               - "backend/job-service/**"
+              - "backend/shared/**"
             notif:
               - "backend/notification-service/**"
+              - "backend/shared/**"
             application:
               - "backend/application-service/**"
+              - "backend/shared/**"
             cv:
               - "backend/cv-service/**"
+              - "backend/shared/**"
             matching:
               - "backend/matching-service/**"
+              - "backend/shared/**"
             frontend:
               - "frontend/**"
 
