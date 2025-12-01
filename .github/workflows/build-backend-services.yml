@@ -277,7 +277,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: ./backend/application-service
+          context: ./backend
           file: ./backend/application-service/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
@@ -334,7 +334,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: ./backend/cv-service
+          context: ./backend
           file: ./backend/cv-service/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
@@ -391,7 +391,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: ./backend/matching-service
+          context: ./backend
           file: ./backend/matching-service/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true

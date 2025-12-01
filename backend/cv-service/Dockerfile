@@ -3,11 +3,14 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Copy service-specific files
-COPY requirements.txt .
+COPY cv-service/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy shared library
+COPY shared /app/shared
+
 # Copy service code
-COPY . .
+COPY cv-service /app
 
 # Create uploads directory
 RUN mkdir -p /app/uploads
