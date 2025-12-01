@@ -35,7 +35,6 @@ class CommandHandler(ABC, Generic[TCommand, TCommandResult]):
 
     @abstractmethod
     async def handle(self, command: TCommand) -> TCommandResult:
-        """Execute the command and return result"""
         pass
 
 
@@ -65,7 +64,6 @@ class QueryHandler(ABC, Generic[TQuery, TQueryResult]):
 
     @abstractmethod
     async def handle(self, query: TQuery) -> TQueryResult:
-        """Execute the query and return result"""
         pass
 
 
@@ -76,10 +74,14 @@ class QueryHandler(ABC, Generic[TQuery, TQueryResult]):
 @dataclass
 class DomainEvent(ABC):
     """Base class for domain events"""
+
+    # FIX: required field FIRST (no default)
+    aggregate_id: str
+
+    # then all fields with defaults
     event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     event_type: str = field(default=None)
     timestamp: datetime = field(default_factory=datetime.utcnow)
-    aggregate_id: str = field(default=None)
 
     def __post_init__(self):
         if self.event_type is None:
@@ -97,7 +99,6 @@ class DomainEvent(ABC):
 
     @abstractmethod
     def _payload(self) -> Dict[str, Any]:
-        """Return event-specific payload"""
         pass
 
 
@@ -110,12 +111,10 @@ class EventBus(ABC):
 
     @abstractmethod
     async def publish(self, event: DomainEvent, routing_key: str = None):
-        """Publish an event to the event bus"""
         pass
 
     @abstractmethod
     async def subscribe(self, event_type: str, handler: callable):
-        """Subscribe to events of a specific type"""
         pass
 
 
@@ -124,17 +123,13 @@ class EventBus(ABC):
 # ============================================================================
 
 class CommandBus:
-    """Mediator for dispatching commands to handlers"""
-
     def __init__(self):
         self._handlers: Dict[type, CommandHandler] = {}
 
     def register(self, command_type: type, handler: CommandHandler):
-        """Register a command handler"""
         self._handlers[command_type] = handler
 
     async def send(self, command: Command) -> Any:
-        """Send a command to its handler"""
         handler = self._handlers.get(type(command))
         if not handler:
             raise ValueError(f"No handler registered for {type(command).__name__}")
@@ -142,17 +137,13 @@ class CommandBus:
 
 
 class QueryBus:
-    """Mediator for dispatching queries to handlers"""
-
     def __init__(self):
         self._handlers: Dict[type, QueryHandler] = {}
 
     def register(self, query_type: type, handler: QueryHandler):
-        """Register a query handler"""
         self._handlers[query_type] = handler
 
     async def send(self, query: Query) -> Any:
-        """Send a query to its handler"""
         handler = self._handlers.get(type(query))
         if not handler:
             raise ValueError(f"No handler registered for {type(query).__name__}")
@@ -173,10 +164,8 @@ class Result:
 
     @staticmethod
     def ok(data: Any = None) -> 'Result':
-        """Create a successful result"""
         return Result(success=True, data=data)
 
     @staticmethod
     def fail(error: str, errors: List[str] = None) -> 'Result':
-        """Create a failed result"""
         return Result(success=False, error=error, errors=errors or [])
