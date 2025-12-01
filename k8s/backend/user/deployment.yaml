@@ -19,7 +19,7 @@ spec:
         - name: ghcr-secret
       containers:
         - name: user-service
-          image: ghcr.io/erfanalizada/user-service:e51ebdaae1685d688c452361b56ced42b645ee24
+          image: ghcr.io/erfanalizada/user-service:8571f94f966df47b79e6c68723e91ebc3dbb7cc0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
