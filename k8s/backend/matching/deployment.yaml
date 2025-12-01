@@ -17,7 +17,7 @@ spec:
       - name: ghcr-secret
       containers:
       - name: matching-service
-        image: ghcr.io/erfanalizada/matching-service:c1f4bc9f2a41d91a6ac58f663ff184bef7da5801
+        image: ghcr.io/erfanalizada/matching-service:57acba87b03303f774c58602ebd02beb43e03afd
         ports:
         - containerPort: 5004
         env:
