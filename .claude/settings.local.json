@@ -5,7 +5,18 @@
       "Bash(git commit:*)",
       "Bash(git push)",
       "Bash(flutter pub get:*)",
-      "Bash(kubectl logs:*)"
+      "Bash(kubectl logs:*)",
+      "Bash(kubectl get:*)",
+      "Bash(git stash:*)",
+      "Bash(git pull:*)",
+      "Bash(git push:*)",
+      "Bash(kubectl apply:*)",
+      "Bash(kubectl describe:*)",
+      "Bash(gh workflow:*)",
+      "Bash(kubectl patch:*)",
+      "Bash(kubectl:*)",
+      "Bash(echo:*)",
+      "Bash(kubectl delete:*)"
     ],
     "deny": [],
     "ask": []

@@ -8,16 +8,19 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential && \
     rm -rf /var/lib/apt/lists/*
 
+# Copy service files
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
 COPY . .
 
-# Create a non-root user for security
+# Copy shared code
+COPY --from=shared . ./shared
+
+# Install deps
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir ./shared
+
 RUN useradd -m appuser
 USER appuser
 
 EXPOSE 5000
-
-# Use Gunicorn as the production server
 CMD ["gunicorn", "-b", "0.0.0.0:5000", "--workers", "3", "app:app"]

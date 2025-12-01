@@ -3,7 +3,6 @@ name: Build and Push Images (GitOps)
 on:
   push:
     branches: [main]
-    
   workflow_dispatch:
 
 permissions:
@@ -51,7 +50,7 @@ jobs:
               - "frontend/**"
 
   # =========================================
-  # BUILD BACKEND SERVICES (PARALLEL)
+  # BACKEND SERVICE BUILDS
   # =========================================
   build-auth:
     needs: detect-changes
@@ -208,7 +207,7 @@ jobs:
             --push
 
   # =========================================
-  # BUILD FRONTEND (AMD64 ONLY)
+  # FRONTEND
   # =========================================
   build-frontend:
     needs: detect-changes
@@ -232,10 +231,10 @@ jobs:
             --push
 
   # =========================================
-  # UPDATE K8S MANIFESTS (SINGLE ATOMIC COMMIT)
+  # UPDATE K8S MANIFESTS
   # =========================================
   update-manifests:
-    needs: 
+    needs:
       - detect-changes
       - build-auth
       - build-user
@@ -245,17 +244,9 @@ jobs:
       - build-cv
       - build-matching
       - build-frontend
-    if: always() && !cancelled() && (
-      needs.build-auth.result == 'success' ||
-      needs.build-user.result == 'success' ||
-      needs.build-job.result == 'success' ||
-      needs.build-notif.result == 'success' ||
-      needs.build-application.result == 'success' ||
-      needs.build-cv.result == 'success' ||
-      needs.build-matching.result == 'success' ||
-      needs.build-frontend.result == 'success'
-      )
+    if: always() && !cancelled()
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -268,132 +259,68 @@ jobs:
           git config user.name "GitHub Actions"
           git pull --rebase origin main
 
-      - name: Update all manifests that changed
+      - name: Update manifests
+        env:
+          BUILD_AUTH: ${{ needs.build-auth.result }}
+          BUILD_USER: ${{ needs.build-user.result }}
+          BUILD_JOB: ${{ needs.build-job.result }}
+          BUILD_NOTIF: ${{ needs.build-notif.result }}
+          BUILD_APPLICATION: ${{ needs.build-application.result }}
+          BUILD_CV: ${{ needs.build-cv.result }}
+          BUILD_MATCHING: ${{ needs.build-matching.result }}
+          BUILD_FRONTEND: ${{ needs.build-frontend.result }}
         run: |
-          # Update auth-service manifest
-          if [ "${{ needs.build-auth.result }}" == "success" ]; then
-            echo "Updating auth-service manifest..."
-            sed -i "s|image: ghcr.io/.*/auth-service:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/auth-service:${{ github.sha }}|" k8s/backend/auth/deployment.yaml
-          fi
+          declare -A MAP=(
+            ["auth"]="auth-service"
+            ["user"]="user-service"
+            ["job"]="job-service"
+            ["notif"]="notification-service"
+            ["application"]="application-service"
+            ["cv"]="cv-service"
+            ["matching"]="matching-service"
+            ["frontend"]="talentlink-frontend"
+          )
 
-          # Update user-service manifest
-          if [ "${{ needs.build-user.result }}" == "success" ]; then
-            echo "Updating user-service manifest..."
-            sed -i "s|image: ghcr.io/.*/user-service:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/user-service:${{ github.sha }}|" k8s/backend/user/deployment.yaml
-          fi
+          declare -A RESULT=(
+            ["auth"]="$BUILD_AUTH"
+            ["user"]="$BUILD_USER"
+            ["job"]="$BUILD_JOB"
+            ["notif"]="$BUILD_NOTIF"
+            ["application"]="$BUILD_APPLICATION"
+            ["cv"]="$BUILD_CV"
+            ["matching"]="$BUILD_MATCHING"
+            ["frontend"]="$BUILD_FRONTEND"
+          )
 
-          # Update job-service manifest
-          if [ "${{ needs.build-job.result }}" == "success" ]; then
-            echo "Updating job-service manifest..."
-            sed -i "s|image: ghcr.io/.*/job-service:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/job-service:${{ github.sha }}|" k8s/backend/job/deployment.yaml
-          fi
+          for key in "${!MAP[@]}"; do
+            if [[ "${RESULT[$key]}" == "success" ]]; then
+              echo "Updating ${MAP[$key]} image..."
+              sed -i "s|image: ghcr.io/.*/${MAP[$key]}:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/${MAP[$key]}:${{ github.sha }}|" \
+                k8s/backend/$key/deployment.yaml 2>/dev/null || true
+              sed -i "s|image: ghcr.io/.*/${MAP[$key]}:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/${MAP[$key]}:${{ github.sha }}|" \
+                k8s/frontend/deployment.yaml 2>/dev/null || true
+            fi
+          done
 
-          # Update notification-service manifest
-          if [ "${{ needs.build-notif.result }}" == "success" ]; then
-            echo "Updating notification-service manifest..."
-            sed -i "s|image: ghcr.io/.*/notification-service:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/notification-service:${{ github.sha }}|" k8s/backend/notification/deployment.yaml
-          fi
-
-          # Update application-service manifest
-          if [ "${{ needs.build-application.result }}" == "success" ]; then
-            echo "Updating application-service manifest..."
-            sed -i "s|image: ghcr.io/.*/application-service:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/application-service:${{ github.sha }}|" k8s/backend/application/deployment.yaml
-          fi
-
-          # Update cv-service manifest
-          if [ "${{ needs.build-cv.result }}" == "success" ]; then
-            echo "Updating cv-service manifest..."
-            sed -i "s|image: ghcr.io/.*/cv-service:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/cv-service:${{ github.sha }}|" k8s/backend/cv/deployment.yaml
-          fi
-
-          # Update matching-service manifest
-          if [ "${{ needs.build-matching.result }}" == "success" ]; then
-            echo "Updating matching-service manifest..."
-            sed -i "s|image: ghcr.io/.*/matching-service:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/matching-service:${{ github.sha }}|" k8s/backend/matching/deployment.yaml
-          fi
-
-          # Update frontend manifest
-          if [ "${{ needs.build-frontend.result }}" == "success" ]; then
-            echo "Updating frontend manifest..."
-            sed -i "s|image: ghcr.io/.*/talentlink-frontend:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-frontend:${{ github.sha }}|" k8s/frontend/deployment.yaml
-          fi
-
-      - name: Commit and push all manifest changes
+      - name: Commit and push changes
         run: |
           git add k8s/
-          
           if git diff --staged --quiet; then
-            echo "No manifest changes to commit"
+            echo "No changes to commit."
             exit 0
           fi
 
-          # Create commit message with all updated services
-          services_updated=""
-          if [ "${{ needs.build-auth.result }}" == "success" ]; then
-            services_updated="${services_updated}auth-service, "
-          fi
-          if [ "${{ needs.build-user.result }}" == "success" ]; then
-            services_updated="${services_updated}user-service, "
-          fi
-          if [ "${{ needs.build-job.result }}" == "success" ]; then
-            services_updated="${services_updated}job-service, "
-          fi
-          if [ "${{ needs.build-notif.result }}" == "success" ]; then
-            services_updated="${services_updated}notification-service, "
-          fi
-          if [ "${{ needs.build-application.result }}" == "success" ]; then
-            services_updated="${services_updated}application-service, "
-          fi
-          if [ "${{ needs.build-cv.result }}" == "success" ]; then
-            services_updated="${services_updated}cv-service, "
-          fi
-          if [ "${{ needs.build-matching.result }}" == "success" ]; then
-            services_updated="${services_updated}matching-service, "
-          fi
-          if [ "${{ needs.build-frontend.result }}" == "success" ]; then
-            services_updated="${services_updated}frontend, "
-          fi
-          
-          # Remove trailing comma and space
-          services_updated=$(echo "$services_updated" | sed 's/, $//')
-          
-          # Create commit message
-          commit_msg="Update images to ${{ github.sha }}
-          
-          Updated services: $services_updated
-          
-          [skip ci]"
-          
-          git commit -m "$commit_msg"
-
-          # Retry logic for race conditions
-          max_attempts=5
-          attempt=1
-          until git push origin main; do
-            if [ $attempt -ge $max_attempts ]; then
-              echo "❌ Failed to push after $max_attempts attempts"
-              exit 1
-            fi
-            echo "⚠️  Push failed, retrying... (attempt $attempt/$max_attempts)"
-            git pull --rebase origin main
-            attempt=$((attempt + 1))
-            sleep $((attempt * 2))  # Exponential backoff
-          done
-
-          echo "✅ Successfully pushed manifest updates"
+          git commit -m "GitOps: Update images to ${{ github.sha }} [skip ci]"
+          git push origin main
 
   # =========================================
-  # NOTIFY SUCCESS
+  # NOTIFY
   # =========================================
   notify-success:
     needs: update-manifests
     if: success()
     runs-on: ubuntu-latest
     steps:
-      - name: Success notification
-        run: |
-          echo "✅ GitOps pipeline completed successfully!"
-          echo "🎯 Commit SHA: ${{ github.sha }}"
-          echo "📦 Images pushed to GHCR"
-          echo "📝 Manifests updated in k8s/"
-          echo "🔄 ArgoCD will detect changes and deploy automatically"
+      - run: |
+          echo "🚀 GitOps pipeline complete"
+          echo "ArgoCD will now deploy the new images."

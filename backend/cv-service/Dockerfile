@@ -2,19 +2,17 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy service-specific files
-COPY cv-service/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy service files
+COPY requirements.txt .
+COPY . .
 
-# Copy shared library
-COPY shared ./shared
+# Copy shared code (passed as: --build-context shared=./backend/shared)
+COPY --from=shared . ./shared
 
-# Copy service code
-COPY cv-service/. .
+# Install deps
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir ./shared
 
-# Create uploads directory
-RUN mkdir -p /app/uploads
-
-EXPOSE 5003
+EXPOSE 5000
 
 CMD ["python", "app.py"]
