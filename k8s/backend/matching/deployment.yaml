@@ -1,6 +1,6 @@
       containers:
         - name: matching-service
-          image: ghcr.io/erfanalizada/matching-service:c52792751a521f8b5cc10f6e1b42f2b2982e0437
+          image: ghcr.io/erfanalizada/matching-service:654a03a7dd9fa9629682f80a680d588ef70e7378
           ports:
             - containerPort: 5004
           env:

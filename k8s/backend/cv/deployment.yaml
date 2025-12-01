@@ -17,7 +17,7 @@ spec:
       - name: ghcr-secret
       containers:
       - name: cv-service
-        image: ghcr.io/erfanalizada/cv-service:c52792751a521f8b5cc10f6e1b42f2b2982e0437
+        image: ghcr.io/erfanalizada/cv-service:654a03a7dd9fa9629682f80a680d588ef70e7378
         ports:
         - containerPort: 5003
         env:
