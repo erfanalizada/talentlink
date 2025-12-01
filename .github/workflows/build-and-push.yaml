@@ -3,13 +3,16 @@ name: Build and Push Images (GitOps)
 on:
   push:
     branches: [main]
-  workflow_dispatch:   # ✅ allows manual trigger for full rebuild
+  workflow_dispatch:
 
 permissions:
   contents: write
   packages: write
 
 jobs:
+  # =========================================
+  # DETECT CHANGES
+  # =========================================
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
@@ -17,6 +20,9 @@ jobs:
       user: ${{ steps.filter.outputs.user }}
       job: ${{ steps.filter.outputs.job }}
       notif: ${{ steps.filter.outputs.notif }}
+      application: ${{ steps.filter.outputs.application }}
+      cv: ${{ steps.filter.outputs.cv }}
+      matching: ${{ steps.filter.outputs.matching }}
       frontend: ${{ steps.filter.outputs.frontend }}
     steps:
       - uses: actions/checkout@v4
@@ -34,13 +40,18 @@ jobs:
               - "backend/job-service/**"
             notif:
               - "backend/notification-service/**"
+            application:
+              - "backend/application-service/**"
+            cv:
+              - "backend/cv-service/**"
+            matching:
+              - "backend/matching-service/**"
             frontend:
               - "frontend/**"
-              - "k8s/frontend/**"
 
-  # ---------------------------------------
-  # AUTH SERVICE
-  # ---------------------------------------
+  # =========================================
+  # BUILD BACKEND SERVICES (PARALLEL)
+  # =========================================
   build-auth:
     needs: detect-changes
     if: needs.detect-changes.outputs.auth == 'true' || github.event_name == 'workflow_dispatch'
@@ -50,9 +61,8 @@ jobs:
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
-      - name: Login GHCR
-        run: echo "${{ secrets.GHCR_TOKEN }}" |
-          docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+      - name: Login to GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
 
       - name: Build & Push auth-service
         run: |
@@ -64,21 +74,6 @@ jobs:
             ./backend/auth-service \
             --push
 
-      - name: Update auth manifest (GitOps)
-        run: |
-          sed -i "s|image: ghcr.io.*/auth-service:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/auth-service:${{ github.sha }}|" k8s/backend/auth/deployment.yaml
-
-      - name: Commit updated manifest
-        run: |
-          git config user.email "ci@github"
-          git config user.name "GitHub Actions"
-          git add k8s/backend/auth/deployment.yaml
-          git commit -m "Update auth-service image to ${{ github.sha }}" || echo "No changes"
-          git push
-
-  # ---------------------------------------
-  # USER SERVICE
-  # ---------------------------------------
   build-user:
     needs: detect-changes
     if: needs.detect-changes.outputs.user == 'true' || github.event_name == 'workflow_dispatch'
@@ -88,9 +83,8 @@ jobs:
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
-      - name: Login GHCR
-        run: echo "${{ secrets.GHCR_TOKEN }}" |
-          docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+      - name: Login to GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
 
       - name: Build & Push user-service
         run: |
@@ -102,21 +96,6 @@ jobs:
             ./backend/user-service \
             --push
 
-      - name: Update user manifest
-        run: |
-          sed -i "s|image: ghcr.io.*/user-service:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/user-service:${{ github.sha }}|" k8s/backend/user/deployment.yaml
-
-      - name: Commit
-        run: |
-          git config user.email "ci@github"
-          git config user.name "GitHub Actions"
-          git add k8s/backend/user/deployment.yaml
-          git commit -m "Update user-service image to ${{ github.sha }}" || echo "No changes"
-          git push
-
-  # ---------------------------------------
-  # JOB SERVICE
-  # ---------------------------------------
   build-job:
     needs: detect-changes
     if: needs.detect-changes.outputs.job == 'true' || github.event_name == 'workflow_dispatch'
@@ -126,9 +105,8 @@ jobs:
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
-      - name: Login GHCR
-        run: echo "${{ secrets.GHCR_TOKEN }}" |
-          docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+      - name: Login to GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
 
       - name: Build & Push job-service
         run: |
@@ -140,21 +118,6 @@ jobs:
             ./backend/job-service \
             --push
 
-      - name: Update job manifest
-        run: |
-          sed -i "s|image: ghcr.io.*/job-service:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/job-service:${{ github.sha }}|" k8s/backend/job/deployment.yaml
-
-      - name: Commit
-        run: |
-          git config user.email "ci@github"
-          git config user.name "GitHub Actions"
-          git add k8s/backend/job/deployment.yaml
-          git commit -m "Update job-service image to ${{ github.sha }}" || echo "No changes"
-          git push
-
-  # ---------------------------------------
-  # NOTIFICATION SERVICE
-  # ---------------------------------------
   build-notif:
     needs: detect-changes
     if: needs.detect-changes.outputs.notif == 'true' || github.event_name == 'workflow_dispatch'
@@ -164,9 +127,8 @@ jobs:
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
-      - name: Login GHCR
-        run: echo "${{ secrets.GHCR_TOKEN }}" |
-          docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+      - name: Login to GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
 
       - name: Build & Push notification-service
         run: |
@@ -178,21 +140,75 @@ jobs:
             ./backend/notification-service \
             --push
 
-      - name: Update notification manifest
-        run: |
-          sed -i "s|image: ghcr.io.*/notification-service:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/notification-service:${{ github.sha }}|" k8s/backend/notification/deployment.yaml
+  build-application:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.application == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
 
-      - name: Commit
-        run: |
-          git config user.email "ci@github"
-          git config user.name "GitHub Actions"
-          git add k8s/backend/notification/deployment.yaml
-          git commit -m "Update notification-service image to ${{ github.sha }}" || echo "No changes"
-          git push
+      - name: Login to GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
 
-  # ---------------------------------------
-  # FRONTEND (AMD64 ONLY)
-  # ---------------------------------------
+      - name: Build & Push application-service
+        run: |
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --build-context shared=./backend/shared \
+            -t ghcr.io/${{ secrets.GHCR_USERNAME }}/application-service:${{ github.sha }} \
+            -t ghcr.io/${{ secrets.GHCR_USERNAME }}/application-service:latest \
+            ./backend/application-service \
+            --push
+
+  build-cv:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.cv == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+
+      - name: Build & Push cv-service
+        run: |
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --build-context shared=./backend/shared \
+            -t ghcr.io/${{ secrets.GHCR_USERNAME }}/cv-service:${{ github.sha }} \
+            -t ghcr.io/${{ secrets.GHCR_USERNAME }}/cv-service:latest \
+            ./backend/cv-service \
+            --push
+
+  build-matching:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.matching == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+
+      - name: Build & Push matching-service
+        run: |
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --build-context shared=./backend/shared \
+            -t ghcr.io/${{ secrets.GHCR_USERNAME }}/matching-service:${{ github.sha }} \
+            -t ghcr.io/${{ secrets.GHCR_USERNAME }}/matching-service:latest \
+            ./backend/matching-service \
+            --push
+
+  # =========================================
+  # BUILD FRONTEND (AMD64 ONLY)
+  # =========================================
   build-frontend:
     needs: detect-changes
     if: needs.detect-changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
@@ -202,11 +218,10 @@ jobs:
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
-      - name: Login GHCR
-        run: echo "${{ secrets.GHCR_TOKEN }}" |
-          docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+      - name: Login to GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
 
-      - name: Build & Push frontend (AMD64 only)
+      - name: Build & Push frontend
         run: |
           docker buildx build \
             --platform linux/amd64 \
@@ -215,14 +230,169 @@ jobs:
             ./frontend \
             --push
 
-      - name: Update frontend manifest
-        run: |
-          sed -i "s|image: ghcr.io.*/talentlink-frontend:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-frontend:${{ github.sha }}|" k8s/frontend/deployment.yaml
+  # =========================================
+  # UPDATE K8S MANIFESTS (SINGLE ATOMIC COMMIT)
+  # =========================================
+  update-manifests:
+    needs: 
+      - detect-changes
+      - build-auth
+      - build-user
+      - build-job
+      - build-notif
+      - build-application
+      - build-cv
+      - build-matching
+      - build-frontend
+    if: always() && !cancelled() && (
+      needs.build-auth.result == 'success' ||
+      needs.build-user.result == 'success' ||
+      needs.build-job.result == 'success' ||
+      needs.build-notif.result == 'success' ||
+      needs.build-application.result == 'success' ||
+      needs.build-cv.result == 'success' ||
+      needs.build-matching.result == 'success' ||
+      needs.build-frontend.result == 'success'
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Commit
+      - name: Pull latest changes
         run: |
-          git config user.email "ci@github"
+          git config user.email "ci@github.com"
           git config user.name "GitHub Actions"
-          git add k8s/frontend/deployment.yaml
-          git commit -m "Update frontend image to ${{ github.sha }}" || echo "No changes"
-          git push
+          git pull --rebase origin main
+
+      - name: Update all manifests that changed
+        run: |
+          # Update auth-service manifest
+          if [ "${{ needs.build-auth.result }}" == "success" ]; then
+            echo "Updating auth-service manifest..."
+            sed -i "s|image: ghcr.io/.*/auth-service:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/auth-service:${{ github.sha }}|" k8s/backend/auth/deployment.yaml
+          fi
+
+          # Update user-service manifest
+          if [ "${{ needs.build-user.result }}" == "success" ]; then
+            echo "Updating user-service manifest..."
+            sed -i "s|image: ghcr.io/.*/user-service:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/user-service:${{ github.sha }}|" k8s/backend/user/deployment.yaml
+          fi
+
+          # Update job-service manifest
+          if [ "${{ needs.build-job.result }}" == "success" ]; then
+            echo "Updating job-service manifest..."
+            sed -i "s|image: ghcr.io/.*/job-service:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/job-service:${{ github.sha }}|" k8s/backend/job/deployment.yaml
+          fi
+
+          # Update notification-service manifest
+          if [ "${{ needs.build-notif.result }}" == "success" ]; then
+            echo "Updating notification-service manifest..."
+            sed -i "s|image: ghcr.io/.*/notification-service:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/notification-service:${{ github.sha }}|" k8s/backend/notification/deployment.yaml
+          fi
+
+          # Update application-service manifest
+          if [ "${{ needs.build-application.result }}" == "success" ]; then
+            echo "Updating application-service manifest..."
+            sed -i "s|image: ghcr.io/.*/application-service:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/application-service:${{ github.sha }}|" k8s/backend/application/deployment.yaml
+          fi
+
+          # Update cv-service manifest
+          if [ "${{ needs.build-cv.result }}" == "success" ]; then
+            echo "Updating cv-service manifest..."
+            sed -i "s|image: ghcr.io/.*/cv-service:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/cv-service:${{ github.sha }}|" k8s/backend/cv/deployment.yaml
+          fi
+
+          # Update matching-service manifest
+          if [ "${{ needs.build-matching.result }}" == "success" ]; then
+            echo "Updating matching-service manifest..."
+            sed -i "s|image: ghcr.io/.*/matching-service:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/matching-service:${{ github.sha }}|" k8s/backend/matching/deployment.yaml
+          fi
+
+          # Update frontend manifest
+          if [ "${{ needs.build-frontend.result }}" == "success" ]; then
+            echo "Updating frontend manifest..."
+            sed -i "s|image: ghcr.io/.*/talentlink-frontend:.*|image: ghcr.io/${{ secrets.GHCR_USERNAME }}/talentlink-frontend:${{ github.sha }}|" k8s/frontend/deployment.yaml
+          fi
+
+      - name: Commit and push all manifest changes
+        run: |
+          git add k8s/
+          
+          if git diff --staged --quiet; then
+            echo "No manifest changes to commit"
+            exit 0
+          fi
+
+          # Create commit message with all updated services
+          services_updated=""
+          if [ "${{ needs.build-auth.result }}" == "success" ]; then
+            services_updated="${services_updated}auth-service, "
+          fi
+          if [ "${{ needs.build-user.result }}" == "success" ]; then
+            services_updated="${services_updated}user-service, "
+          fi
+          if [ "${{ needs.build-job.result }}" == "success" ]; then
+            services_updated="${services_updated}job-service, "
+          fi
+          if [ "${{ needs.build-notif.result }}" == "success" ]; then
+            services_updated="${services_updated}notification-service, "
+          fi
+          if [ "${{ needs.build-application.result }}" == "success" ]; then
+            services_updated="${services_updated}application-service, "
+          fi
+          if [ "${{ needs.build-cv.result }}" == "success" ]; then
+            services_updated="${services_updated}cv-service, "
+          fi
+          if [ "${{ needs.build-matching.result }}" == "success" ]; then
+            services_updated="${services_updated}matching-service, "
+          fi
+          if [ "${{ needs.build-frontend.result }}" == "success" ]; then
+            services_updated="${services_updated}frontend, "
+          fi
+          
+          # Remove trailing comma and space
+          services_updated=$(echo "$services_updated" | sed 's/, $//')
+          
+          # Create commit message
+          commit_msg="Update images to ${{ github.sha }}
+          
+          Updated services: $services_updated
+          
+          [skip ci]"
+          
+          git commit -m "$commit_msg"
+
+          # Retry logic for race conditions
+          max_attempts=5
+          attempt=1
+          until git push origin main; do
+            if [ $attempt -ge $max_attempts ]; then
+              echo "❌ Failed to push after $max_attempts attempts"
+              exit 1
+            fi
+            echo "⚠️  Push failed, retrying... (attempt $attempt/$max_attempts)"
+            git pull --rebase origin main
+            attempt=$((attempt + 1))
+            sleep $((attempt * 2))  # Exponential backoff
+          done
+
+          echo "✅ Successfully pushed manifest updates"
+
+  # =========================================
+  # NOTIFY SUCCESS
+  # =========================================
+  notify-success:
+    needs: update-manifests
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Success notification
+        run: |
+          echo "✅ GitOps pipeline completed successfully!"
+          echo "🎯 Commit SHA: ${{ github.sha }}"
+          echo "📦 Images pushed to GHCR"
+          echo "📝 Manifests updated in k8s/"
+          echo "🔄 ArgoCD will detect changes and deploy automatically"
