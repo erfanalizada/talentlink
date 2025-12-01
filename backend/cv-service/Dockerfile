@@ -7,10 +7,10 @@ COPY cv-service/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy shared library
-COPY shared /app/shared
+COPY shared ./shared
 
 # Copy service code
-COPY cv-service /app
+COPY cv-service/. .
 
 # Create uploads directory
 RUN mkdir -p /app/uploads

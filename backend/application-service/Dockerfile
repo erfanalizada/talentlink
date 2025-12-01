@@ -7,10 +7,10 @@ COPY application-service/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy shared library
-COPY shared /app/shared
+COPY shared ./shared
 
 # Copy service code
-COPY application-service /app
+COPY application-service/. .
 
 EXPOSE 5002
 
