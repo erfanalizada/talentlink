@@ -17,7 +17,7 @@ spec:
       - name: ghcr-secret
       containers:
       - name: application-service
-        image: ghcr.io/erfanmoghadasi/talentlink-application-service:latest
+        image: ghcr.io/erfanalizada/talentlink-application-service:67012c66e49eac8efac81cda3a3f1ef694e4e4cc
         ports:
         - containerPort: 5002
         env:
