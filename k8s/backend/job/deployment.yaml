@@ -19,7 +19,7 @@ spec:
         - name: ghcr-secret
       containers:
         - name: job-service
-          image: ghcr.io/erfanalizada/job-service:latest
+          image: ghcr.io/erfanalizada/job-service:58db10d23b0e7343718a6d8a9559875a28da26c3
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
