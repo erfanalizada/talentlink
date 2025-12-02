@@ -13,11 +13,11 @@ from typing import Optional, List
 import uuid
 
 sys.path.append('../shared')
-from database import Database
-from event_bus import RabbitMQEventBus
-from monitoring import MetricsMiddleware
-from auth import require_auth, require_role, get_current_user
-from cqrs_base import Command, CommandHandler, Query, QueryHandler, Result, DomainEvent
+from shared.database import Database
+from shared.event_bus import RabbitMQEventBus
+from shared.monitoring import MetricsMiddleware
+from shared.auth import require_auth, require_role, get_current_user
+from shared.cqrs_base import Command, CommandHandler, Query, QueryHandler, Result, DomainEvent
 
 from src.models.application import Application, ApplicationStatus
 
@@ -302,7 +302,7 @@ class GetJobApplicationsHandler(QueryHandler[GetJobApplicationsQuery, Result]):
 
 
 # Register handlers
-from cqrs_base import CommandBus, QueryBus
+from shared.cqrs_base import CommandBus, QueryBus
 command_bus = CommandBus()
 query_bus = QueryBus()
 
